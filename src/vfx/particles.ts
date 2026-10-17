@@ -341,7 +341,12 @@ export class ParticleSystem {
     if (opts.additive) {
       m.colorNode = vec4(col.mul(tex.rgb).mul(a), a);
     } else {
-      m.colorNode = vec4(col.mul(tex.rgb), a);
+      // sphere-impostor shading: treat the sprite as a lit hemisphere so smoke/dust/rocks read as volumes
+      const c = uv().mul(2).sub(1);
+      const nz = sqrt(max(float(0), float(1).sub(c.dot(c))));
+      const lambert = clamp(vec3(c.x, c.y, nz).dot(vec3(0.35, 0.75, 0.56)), 0, 1);
+      const rim = float(1).sub(nz).mul(0.25);
+      m.colorNode = vec4(col.mul(tex.rgb).mul(lambert.mul(0.75).add(0.45).add(rim)), a);
     }
     return m;
   }

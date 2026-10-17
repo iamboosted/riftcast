@@ -18,12 +18,14 @@ export interface ProjLike {
 
 /**
  * Solid silhouettes for physical projectiles: tumbling rocks and boulders (Stone), velocity-aligned ice
- * crystals (Frost). Two instanced draw calls rebuilt each frame from the visual projectile list.
+ * crystals (Frost), crescent blades (Gale). Three instanced draw calls rebuilt each frame from the visual projectile list.
  */
 export class ProjMeshes {
   group = new THREE.Group();
   private rocks: THREE.InstancedMesh;
   private ice: THREE.InstancedMesh;
+  private blades: THREE.InstancedMesh;
+  private goo: THREE.InstancedMesh;
   private dummy = new THREE.Object3D();
   private q = new THREE.Quaternion();
   private up = new THREE.Vector3(0, 1, 0);
@@ -43,7 +45,29 @@ export class ProjMeshes {
     im.colorNode = vec3(0.4, 0.75, 1.0).mul(0.4);
     im.emissiveNode = vec3(0.6, 1.0, 1.6).mul(fres.mul(2.5).add(0.6));
     this.ice = new THREE.InstancedMesh(ig, im, max);
-    for (const m of [this.rocks, this.ice]) {
+    // Gale crescent: half-torus, thin at the tips (additive)
+    const bg = new THREE.TorusGeometry(0.75, 0.09, 6, 20, Math.PI);
+    const pa = bg.getAttribute('position') as THREE.BufferAttribute;
+    for (let i = 0; i < pa.count; i++) {
+      const a = Math.atan2(pa.getY(i), pa.getX(i));
+      const taper = Math.sin(Math.max(0, Math.min(Math.PI, a)));
+      const cx = Math.cos(a) * 0.75,
+        cy = Math.sin(a) * 0.75;
+      pa.setXYZ(i, cx + (pa.getX(i) - cx) * taper, cy + (pa.getY(i) - cy) * taper, pa.getZ(i) * taper);
+    }
+    bg.rotateX(-Math.PI / 2);
+    bg.translate(0, 0, -0.4);
+    const bm = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+    bm.colorNode = vec3(0.7, 1.6, 1.25).mul(fres.mul(1.5).add(0.6));
+    this.blades = new THREE.InstancedMesh(bg, bm, max);
+    // Venom: glossy wobbling globs (flasks use the same mesh, stretched into a bottle-ish ovoid)
+    const gg = new THREE.IcosahedronGeometry(1, 2);
+    const gm = new THREE.MeshStandardNodeMaterial({ roughness: 0.15, metalness: 0 });
+    const gn = mx_noise_float(positionLocal.mul(2.5)).mul(0.5).add(0.5);
+    gm.colorNode = mix(vec3(0.25, 0.55, 0.05), vec3(0.45, 0.12, 0.6), smoothstep(0.55, 0.8, gn));
+    gm.emissiveNode = vec3(0.6, 1.3, 0.15).mul(fres.mul(1.6).add(smoothstep(0.6, 0.9, gn).mul(1.2)).add(0.2));
+    this.goo = new THREE.InstancedMesh(gg, gm, max);
+    for (const m of [this.rocks, this.ice, this.blades, this.goo]) {
       m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       m.count = 0;
       m.frustumCulled = false;
@@ -53,7 +77,9 @@ export class ProjMeshes {
 
   update(list: Iterable<ProjLike>): void {
     let nr = 0,
-      ni = 0;
+      ni = 0,
+      nb = 0,
+      ng = 0;
     for (const p of list) {
       if (p.spell === 'pebble' || p.spell === 'boulder') {
         if (nr >= this.rocks.instanceMatrix.count) continue;
@@ -64,6 +90,22 @@ export class ProjMeshes {
         this.dummy.scale.setScalar(s);
         this.dummy.updateMatrix();
         this.rocks.setMatrixAt(nr++, this.dummy.matrix);
+      } else if (p.spell === 'glob' || p.spell === 'flask') {
+        if (ng >= this.goo.instanceMatrix.count) continue;
+        const w = Math.sin(p.age * 22 + p.id) * 0.18;
+        const base = p.spell === 'flask' ? 0.32 : 0.26;
+        this.dummy.position.set(p.x, p.y, p.z);
+        this.dummy.rotation.set(p.age * 6, Math.atan2(p.vx, p.vz), 0);
+        this.dummy.scale.set(base * (1 + w), base * (p.spell === 'flask' ? 1.5 : 1) * (1 - w), base * (1 + w));
+        this.dummy.updateMatrix();
+        this.goo.setMatrixAt(ng++, this.dummy.matrix);
+      } else if (p.spell === 'gust') {
+        if (nb >= this.blades.instanceMatrix.count) continue;
+        this.dummy.position.set(p.x, p.y, p.z);
+        this.dummy.rotation.set(0, Math.atan2(p.vx, p.vz) + Math.PI, Math.sin(p.age * 30 + p.id) * 0.35);
+        this.dummy.scale.setScalar(1 + Math.min(0.6, p.age * 1.5));
+        this.dummy.updateMatrix();
+        this.blades.setMatrixAt(nb++, this.dummy.matrix);
       } else if (p.spell === 'shard' || p.spell === 'lance') {
         if (ni >= this.ice.instanceMatrix.count) continue;
         this.dir.set(p.vx, p.vy, p.vz).normalize();
@@ -77,6 +119,10 @@ export class ProjMeshes {
         this.ice.setMatrixAt(ni++, this.dummy.matrix);
       }
     }
+    this.goo.count = ng;
+    this.goo.instanceMatrix.needsUpdate = true;
+    this.blades.count = nb;
+    this.blades.instanceMatrix.needsUpdate = true;
     this.rocks.count = nr;
     this.ice.count = ni;
     this.rocks.instanceMatrix.needsUpdate = true;

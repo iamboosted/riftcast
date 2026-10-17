@@ -43,6 +43,16 @@ async function main() {
   await gfx.init(document.getElementById('c') as HTMLCanvasElement, q ?? undefined);
   const shake = { trauma: 0, fovKick: 0, shake(a: number) { this.trauma = Math.min(1, this.trauma + a); } };
   const view = new GameView(gfx, shake as unknown as CameraRig);
+  // stations overlap by design, so full-screen juice is damped here (the game keeps full strength)
+  view.fx.setJuice({
+    shake: (a) => shake.shake(a * 0.4),
+    flash: (c, a) => {
+      gfx.u.flash.value.set(c);
+      gfx.u.flashAmt.value = Math.max(gfx.u.flashAmt.value, a * 0.12);
+    },
+    hitstop: (ms) => view.hitstop(ms * 0.5),
+    aberration: (a) => (gfx.u.ca.value = Math.max(gfx.u.ca.value, a * 0.3)),
+  });
   const audio = new GameAudio();
   let sound = false;
 

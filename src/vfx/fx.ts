@@ -213,7 +213,7 @@ export class Fx {
         break;
       case 'stone':
         this.e('blend', { x, y, z, count: 14 * s, spread: 8 * s, vx: dvx, vy: dvy + 4, vz: dvz, life: 1.0, lifeVar: 0.4, size: 0.22 * s, sizeVar: 0.5, color: 0x9a7a5a, colorEnd: 0x6a5240, gravity: 22, drag: 0.6, shape: SHAPE.rock, spin: 8, floorY: fy + 0.08, bounce: 0.35 });
-        this.e('blend', { x, y, z, count: 8 * s, spread: 2.5, mode: 2, life: 1.2, lifeVar: 0.4, size: 0.7 * s, sizeEnd: 2.2 * s, color: 0x8a7258, colorEnd: 0x5a4a3a, alpha: 0.5, drag: 2, gravity: -0.3, turb: 1, shape: SHAPE.smoke, spin: 1 });
+        this.e('blend', { x, y, z, count: 8 * s, spread: 2.5, mode: 2, life: 1.2, lifeVar: 0.4, size: 0.7 * s, sizeEnd: 2.2 * s, color: 0xb0a088, colorEnd: 0x7a6a58, alpha: 0.42, drag: 2, gravity: -0.3, turb: 1, shape: SHAPE.smoke, spin: 1 });
         this.e('add', { x, y, z, count: 8 * s, spread: 7, life: 0.3, size: 0.07, color: c.core, colorEnd: c.main, intensity: 4, gravity: 10, shape: SHAPE.spark, stretch: 4 });
         break;
       case 'venom':
@@ -414,7 +414,7 @@ export class Fx {
     this.distort?.burst(x, gy + 1, z, r * 2.5, 1.0, 0.55);
     this.decals.rune.addTransient({ x, y: gy, z, sx: r * 0.8, sz: r * 0.8, rot: 0, d: [0, 0, 1.5, Math.random() * 10], color: new THREE.Color(c.main) }, 1.0);
     this.juice.shake(0.35);
-    this.lights.flash(x, gy + 1.5, z, c.main, 70, r * 3, 0.6);
+    this.lights.flash(x, gy + 1.5, z, c.main, el === 'frost' ? 35 : 60, r * 3, 0.6);
     if (el === 'frost') this.ice.burst(x, gy, z, r * 0.85, 34, 2.4, 3);
     switch (el) {
       case 'fire':
@@ -425,8 +425,8 @@ export class Fx {
       case 'frost':
         this.e('add', { x, y: gy + 0.3, z, count: 140, spread: 2, posSpread: r, mode: 3, life: 1.2, lifeVar: 0.4, size: 0.5, sizeEnd: 0.0, color: c.core, colorEnd: c.main, intensity: 3.5, gravity: -2, turb: 1.5, shape: SHAPE.shard, spin: 2 });
         this.e('add', { x, y: gy + 4, z, count: 120, spread: 1.5, posSpread: r, mode: 3, vy: -3, life: 1.6, size: 0.18, color: 0xffffff, colorEnd: c.main, intensity: 3, gravity: 2, turb: 2, shape: SHAPE.flake, spin: 2, floorY: gy });
-        this.e('add', { x, y: gy + 1, z, count: 2, life: 0.25, size: r * 3, sizeEnd: r, color: c.core, colorEnd: c.main, intensity: 2.5, shape: SHAPE.glow });
-        this.juice.flash(0x9fe8ff, 0.25);
+        this.e('add', { x, y: gy + 1, z, count: 1, life: 0.22, size: r * 2.6, sizeEnd: r, color: c.core, colorEnd: c.main, intensity: 1.3, shape: SHAPE.glow });
+        this.juice.flash(0x9fe8ff, 0.15);
         break;
       case 'gale':
         this.e('add', { x, y: gy + 0.5, z, count: 80, spread: r * 2.6, mode: 1, life: 0.55, size: 1.6, sizeEnd: 2.4, color: c.core, colorEnd: c.main, intensity: 1.5, alpha: 0.6, drag: 3, turb: 6, shape: SHAPE.wisp, spin: 8 });

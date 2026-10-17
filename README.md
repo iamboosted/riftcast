@@ -40,6 +40,16 @@ Elements react through world state regardless of who cast them, and every contri
 
 The table lives in [`src/data/combos.json`](src/data/combos.json), so adding a combo is a data change.
 
+## Screenshots
+
+Captured automatically by `scripts/screenshots.mjs` (Playwright, WebGPU via SwiftShader):
+
+| Combat (High) | Combat (Ultra) |
+|---|---|
+| ![combat high](screenshots/combat-high.jpg) | ![combat ultra](screenshots/combat-ultra.jpg) |
+| **VFX gallery: Chain Surge (Low)** | **iPhone landscape, touch controls** |
+| ![gallery](screenshots/gallery-low.jpg) | ![mobile](screenshots/mobile-combat-touch.jpg) |
+
 ## Develop
 
 ```bash

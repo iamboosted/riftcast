@@ -1,14 +1,70 @@
 [
   {
+    "shot": "gallery-low",
+    "stats": "2 fps · WebGPU · Low · particles 1,087 (GPU compute) · draws 56 · 6/42 stations live",
+    "errors": []
+  },
+  {
+    "shot": "combat-low",
+    "webgpu": true,
+    "particles": 193,
+    "draws": 55,
+    "enemies": 4,
+    "errors": []
+  },
+  {
+    "shot": "gallery-medium",
+    "stats": "4 fps · WebGPU · Medium · particles 2,643 (GPU compute) · draws 63 · 6/42 stations live",
+    "errors": []
+  },
+  {
+    "shot": "combat-medium",
+    "webgpu": true,
+    "particles": 273,
+    "draws": 56,
+    "enemies": 4,
+    "errors": []
+  },
+  {
+    "shot": "gallery-high",
+    "stats": "4 fps · WebGPU · High · particles 3,275 (GPU compute) · draws 63 · 6/42 stations live",
+    "errors": []
+  },
+  {
+    "shot": "combat-high",
+    "webgpu": true,
+    "particles": 545,
+    "draws": 61,
+    "enemies": 4,
+    "errors": []
+  },
+  {
+    "shot": "gallery-ultra",
+    "stats": "2 fps · WebGPU · Ultra · particles 2,191 (GPU compute) · draws 65 · 6/42 stations live",
+    "errors": []
+  },
+  {
+    "shot": "combat-ultra",
+    "webgpu": true,
+    "particles": 452,
+    "draws": 52,
+    "enemies": 4,
+    "errors": []
+  },
+  {
     "shot": "mobile",
     "playing": true,
     "stickRead": true,
     "primaryHeld": true,
-    "moved": 28.74,
+    "moved": 32.1,
     "aimTurned": 0.278,
-    "casts": 127,
-    "buttonsRendered": 0,
+    "casts": 136,
+    "buttonsRendered": 7,
     "errors": [],
-    "pass": false
+    "pass": true
+  },
+  {
+    "shot": "mobile-gallery",
+    "errors": []
   }
 ]

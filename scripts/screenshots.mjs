@@ -135,7 +135,14 @@ if (only.includes('mobile')) {
   for (let i = 1; i <= 12; i++) {
     await touch('touchMove', [[120 + Math.min(40, i * 6), 300 - Math.min(55, i * 8)], [prim.x - i * 4, prim.y]]);
     await p.waitForTimeout(700);
-    samples.push(await p.evaluate(() => ({ mx: window.__game.controls.moveX, my: window.__game.controls.moveY, prim: window.__game.controls.primary })));
+    samples.push(
+      await p.evaluate(() => {
+        const g = window.__game;
+        const me = g.session.state.players.get(g.session.localId);
+        if (me) me.hp = me.maxHp; // keep the test mage alive while we drive the controls
+        return { mx: g.controls.moveX, my: g.controls.moveY, prim: g.controls.primary };
+      }),
+    );
   }
   await p.screenshot({ path: `${outDir}/mobile-combat-touch.jpg`, type: 'jpeg', quality: 82, timeout: 300000 });
   const buttonsRendered = await p.evaluate(() => [...document.querySelectorAll('.tbtn')].filter((el) => el.getBoundingClientRect().width > 20).length);
@@ -165,8 +172,29 @@ if (only.includes('mobile')) {
   result.pass = result.playing && result.stickRead && result.primaryHeld && result.moved > 0.5 && Math.abs(result.aimTurned) > 0.01 && result.casts > 0 && result.buttonsRendered >= 7;
   report.push(result);
   await ctx.close();
+
+  // the gallery on a phone (2-column layout, toolbar wraps, drag to pan)
+  const m2 = await page({ width: 844, height: 390 }, true);
+  await m2.p.goto(`${base}vfx-gallery/?slowgpu`);
+  await waitFor(m2.p, () => !!window.__gallery, 60000);
+  await m2.p.evaluate(() => window.__gallery.focus(19, 16));
+  await m2.p.waitForTimeout(10000);
+  await m2.p.evaluate(() => {
+    window.__gallery.setMaxDt(1 / 30);
+    window.__gallery.seek();
+  });
+  await m2.p.waitForTimeout(8000);
+  await m2.p.screenshot({ path: `${outDir}/mobile-gallery.jpg`, type: 'jpeg', quality: 82, timeout: 300000 });
+  report.push({ shot: 'mobile-gallery', errors: m2.errors.slice(0, 3) });
+  await m2.ctx.close();
 }
 
 await browser.close();
-writeFileSync(`${outDir}/report.json`, JSON.stringify(report, null, 2));
+// merge with an existing report so partial runs (ONLY=...) keep earlier results
+let prev = [];
+try {
+  prev = JSON.parse((await import('node:fs')).readFileSync(`${outDir}/report.json`, 'utf8'));
+} catch {}
+const merged = [...prev.filter((r) => !report.some((n) => n.shot === r.shot)), ...report];
+writeFileSync(`${outDir}/report.json`, JSON.stringify(merged, null, 2));
 console.log(JSON.stringify(report, null, 2));

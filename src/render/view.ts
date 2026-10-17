@@ -110,7 +110,10 @@ export class GameView {
     this.fx.ground = this.ground;
     for (const w of this.walls.values()) this.root.remove(w);
     this.walls.clear();
-    for (const [, e] of this.enemies) this.root.remove(e.rig.root);
+    for (const [, e] of this.enemies) {
+      this.root.remove(e.rig.root);
+      disposeGeometries(e.rig.root);
+    }
     this.enemies.clear();
   }
 
@@ -451,6 +454,7 @@ export class GameView {
       v.rig.root.position.y -= dt * 0.4;
       if (v.dying > 0.65) {
         this.root.remove(v.rig.root);
+        disposeGeometries(v.rig.root);
         this.enemies.delete(id);
       }
     }
@@ -481,6 +485,7 @@ export class GameView {
       if (!ids.has(id)) {
         this.fx.burst('stone', m.position.x, m.position.y + 1, m.position.z, 1.5);
         this.root.remove(m);
+        m.geometry.dispose();
         this.walls.delete(id);
       }
     }
@@ -528,6 +533,9 @@ export class GameView {
     for (const [id, o] of this.pickups) {
       if (!ids.has(id)) {
         this.root.remove(o);
+        const m = o as THREE.Mesh;
+        m.geometry?.dispose();
+        (m.material as THREE.Material | undefined)?.dispose();
         this.pickups.delete(id);
       }
     }
@@ -540,6 +548,11 @@ export class GameView {
   update(dt: number, camera: THREE.Camera) {
     this.fx.update(dt, camera);
   }
+}
+
+/** Actor geometry is built per instance (materials are shared), so free it when the actor goes away. */
+function disposeGeometries(root: THREE.Object3D) {
+  root.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
 }
 
 export { wallEnds };

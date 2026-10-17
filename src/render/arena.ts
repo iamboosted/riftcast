@@ -100,7 +100,7 @@ export class Arena {
     const starMask = step(0.9965, rnd).mul(smoothstep(-0.05, 0.25, h)).mul(twinkle.mul(0.7).add(0.3));
     // rift band: a glowing tear across the sky
     const band = abs(dir.y.sub(dir.x.mul(0.35)).sub(0.32).add(mx_noise_float(dir.mul(3)).mul(0.04)));
-    const rift = smoothstep(0.05, 0.0, band).mul(smoothstep(-0.6, 0.6, dir.z)).mul(1.8);
+    const rift = smoothstep(0.05, 0.0, band).mul(smoothstep(-0.6, 0.6, dir.z)).mul(1.25);
     skyMat.colorNode = base.add(nebCol.mul(nebMask).mul(0.5)).add(vec3(starMask.mul(2.2))).add(vec3(this.uAccent).mul(rift));
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(400, 32, 16), skyMat);
     this.sky.renderOrder = -10;
