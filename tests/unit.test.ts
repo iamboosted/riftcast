@@ -338,3 +338,28 @@ import { damageEnemy } from '../src/sim/combat';
 function damageEnemyDirect(w: World, e: ReturnType<World['spawnEnemy']>) {
   damageEnemy(w, e, e.hp * 20 + 1000, 'stone', 'p', { noStatus: true, noCrit: true });
 }
+
+describe('enemy navigation', () => {
+  it('walkers get around a stone wall that sits squarely between them and the player', () => {
+    const w = new World(21);
+    w.addPlayer({ id: 'p', name: 'P', gauntlets: ['fire', 'frost'] });
+    w.startRun();
+    w.room.waves = [];
+    w.room.obstacles = [];
+    w.spawnZone({ tag: 'wall', element: 'stone', pos: { x: 0, y: 0, z: -6 }, radius: 4, life: 999, dps: 0, contributors: ['p'], angle: 0, len: 4 });
+    const p = w.players.get('p')!;
+    p.pos = { x: 0, y: 0, z: 0 };
+    const e = w.spawnEnemy('husk', { x: 0, y: 0, z: -12 }, { affix: '' });
+    e.spawnT = 0;
+    e.state = 'chase';
+    let best = Infinity;
+    for (let i = 0; i < 30 * 10; i++) {
+      p.hp = p.maxHp;
+      p.pos.x = 0;
+      p.pos.z = 0;
+      w.step(SIM_DT);
+      best = Math.min(best, Math.hypot(e.pos.x - p.pos.x, e.pos.z - p.pos.z));
+    }
+    expect(best).toBeLessThan(3.5);
+  });
+});

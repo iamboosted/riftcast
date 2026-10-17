@@ -207,11 +207,24 @@ function moveDir(w: World, e: Enemy, mx: number, mz: number, speed: number, dt: 
       mz += (sz / sd) * (min - sd) * 1.5;
     }
   }
-  const l = Math.hypot(mx, mz);
+  let l = Math.hypot(mx, mz);
   if (l > 1) {
     mx /= l;
     mz /= l;
   }
+  // stuck recovery: sidestep along a perpendicular for a moment
+  if ((e.data.detour ?? 0) > 0) {
+    e.data.detour -= dt;
+    const side = e.data.detourSide ?? 1;
+    const ox = mx;
+    mx = mx * 0.3 - mz * side;
+    mz = mz * 0.3 + ox * side;
+    l = Math.hypot(mx, mz) || 1;
+    mx /= l;
+    mz /= l;
+  }
+  const sx = e.pos.x,
+    sz = e.pos.z;
   const nx = e.pos.x + mx * speed * dt,
     nz = e.pos.z + mz * speed * dt;
   if (e.flying) {
@@ -230,6 +243,16 @@ function moveDir(w: World, e: Enemy, mx: number, mz: number, speed: number, dt: 
     if (gh > -1e9 && e.ky <= 0) e.pos.y = gh;
   }
   resolveCollisions(e, e.radius, w.colliders);
+  if (!e.flying && speed > 0.5) {
+    const moved = Math.hypot(e.pos.x - sx, e.pos.z - sz);
+    const want = speed * dt;
+    e.data.stuckT = moved < want * 0.3 ? (e.data.stuckT ?? 0) + dt : Math.max(0, (e.data.stuckT ?? 0) - dt);
+    if (e.data.stuckT > 0.5 && !(e.data.detour > 0)) {
+      e.data.detour = 0.9;
+      e.data.detourSide = w.rng.chance(0.5) ? 1 : -1;
+      e.data.stuckT = 0;
+    }
+  }
 }
 
 function startAttack(w: World, e: Enemy, idx: number, tgt: Player): void {
