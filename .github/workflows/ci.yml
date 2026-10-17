@@ -41,14 +41,14 @@ jobs:
       - run: npm test
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
-        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
           path: dist
 
   deploy:
     name: Deploy to GitHub Pages
     needs: [secret-scan, test-build]
-    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       pages: write
