@@ -20,6 +20,8 @@ type MageRig = ReturnType<typeof buildMage>;
 
 interface EnemyVis {
   shieldMesh?: THREE.Mesh;
+  last?: V3;
+  gait?: number;
   rig: ActorRig;
   dying: number;
   kind: string;
@@ -40,7 +42,7 @@ export class GameView {
   arena: Arena;
   fx: Fx;
   root = new THREE.Group();
-  private players = new Map<string, { rig: MageRig; el: string; pos: V3; lastHover: number }>();
+  private players = new Map<string, { rig: MageRig; el: string; pos: V3; lastHover: number; last: V3; speed: number; phase: number }>();
   private enemies = new Map<number, EnemyVis>();
   private walls = new Map<number, THREE.Mesh>();
   private pickups = new Map<number, THREE.Object3D>();
@@ -342,7 +344,7 @@ export class GameView {
       if (!v) {
         const rig = buildMage(p.color, p.id.length * 31 + p.color);
         this.root.add(rig.root);
-        v = { rig, el: '', pos: { ...p.pos }, lastHover: 0 };
+        v = { rig, el: '', pos: { ...p.pos }, lastHover: 0, last: { ...p.pos }, speed: 0, phase: 0 };
         this.players.set(p.id, v);
       }
       session.renderPos('p', p.id, v.pos);
@@ -361,7 +363,14 @@ export class GameView {
       r.root.rotation.y = p.yaw;
       const downed = p.state === 'downed';
       r.body.rotation.x = downed ? -1.2 : Math.max(-0.25, Math.min(0.25, -(p.vel.x * Math.sin(p.yaw) + p.vel.z * Math.cos(p.yaw)) * 0.02));
-      r.body.position.y = downed ? 0.35 : Math.sin(this.fx.time * 3 + p.color) * 0.03 + (p.grounded ? 0 : 0.05);
+      // gait from render-position delta (works for predicted, interpolated and host players alike)
+      const sp = dt > 0 ? Math.hypot(v.pos.x - v.last.x, v.pos.z - v.last.z) / dt : 0;
+      v.last = { ...v.pos };
+      v.speed += (Math.min(sp, 12) - v.speed) * Math.min(1, dt * 10);
+      const walk = p.grounded && !downed ? Math.min(1, v.speed / 6) : 0;
+      v.phase += dt * (4 + v.speed * 1.4);
+      r.body.position.y = downed ? 0.35 : Math.sin(this.fx.time * 3 + p.color) * 0.03 * (1 - walk) + Math.abs(Math.sin(v.phase)) * 0.09 * walk + (p.grounded ? 0 : 0.05);
+      r.body.rotation.z = downed ? 0 : Math.sin(v.phase) * 0.06 * walk;
       const fx4 = r.body.userData.fx as THREE.Vector4;
       fx4.x = p.hurtFlash > 0 ? p.hurtFlash * 0.9 : 0;
       fx4.z = 0;
@@ -433,7 +442,14 @@ export class GameView {
       const frozen = e.st.frozen > 0;
       const speedAnim = frozen ? 0 : 1;
       if (e.flying) r.body.position.y = Math.sin(tt * 3) * 0.15 * speedAnim;
-      else r.body.position.y = Math.abs(Math.sin(tt * 6)) * 0.06 * speedAnim;
+      else {
+        const sp = v.last && dt > 0 ? Math.hypot(v.pos.x - v.last.x, v.pos.z - v.last.z) / dt : 0;
+        v.gait = (v.gait ?? 0) + (Math.min(1, sp / 3) - (v.gait ?? 0)) * Math.min(1, dt * 8);
+        const g = v.gait * speedAnim;
+        r.body.position.y = Math.abs(Math.sin(tt * 7)) * (0.03 + 0.12 * g) * (e.radius > 1.2 ? 1.6 : 1);
+        r.body.rotation.z = Math.sin(tt * 7) * 0.09 * g;
+      }
+      v.last = { ...v.pos };
       const wind = e.state === 'windup' ? 1 : 0;
       r.body.scale.set(1 + wind * 0.08, 1 - wind * 0.06, 1 + wind * 0.08);
       for (const sp of r.spinners) sp.rotation.y += dt * (e.boss ? 0.8 : 2.5) * speedAnim;
