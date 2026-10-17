@@ -415,7 +415,7 @@ export class Fx {
     this.distort?.burst(x, gy + 1, z, r * 2.5, 1.0, 0.55);
     this.decals.rune.addTransient({ x, y: gy, z, sx: r * 0.8, sz: r * 0.8, rot: 0, d: [0, 0, 1.5, Math.random() * 10], color: cc(c.main) }, 1.0);
     this.juice.shake(0.35);
-    this.lights.flash(x, gy + 1.5, z, c.main, el === 'frost' ? 35 : 60, r * 3, 0.6);
+    this.lights.flash(x, gy + 2.5, z, c.main, el === 'frost' ? 18 : 60, r * 3, 0.5);
     if (el === 'frost') this.ice.burst(x, gy, z, r * 0.85, 34, 2.4, 3);
     switch (el) {
       case 'fire':

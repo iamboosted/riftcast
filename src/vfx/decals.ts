@@ -154,8 +154,8 @@ export const frostShader = ({ p, d, c }: DecalInputs) => {
   const sparkle = step(0.985, fract(sin(p.x.mul(91.7).add(p.y.mul(47.3)).add(d.w).add(time.mul(0.6).floor())).mul(43758.5)));
   const appear = smoothstep(0.0, 0.08, d.y.add(0.0001)).mul(1);
   const fade = float(1).sub(smoothstep(0.75, 1.0, d.x));
-  const color = mix(vec3(0.75, 0.9, 1.0).mul(0.5), vec3(c).mul(2.6), seams).add(vec3(1.5).mul(sparkle));
-  const glaze = smoothstep(1.0, 0.0, r).mul(0.25);
+  const color = mix(vec3(0.6, 0.78, 0.95).mul(0.4), vec3(c).mul(1.6), seams).add(vec3(1.2).mul(sparkle));
+  const glaze = smoothstep(1.0, 0.0, r).mul(0.12);
   const alpha = mask.mul(seams.mul(0.75).add(0.35).add(glaze)).mul(fade).mul(appear);
   return { color, alpha: clamp(alpha, 0, 1) };
 };

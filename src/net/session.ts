@@ -118,6 +118,10 @@ export class LocalSession implements Session {
   }
 
   protected snapshotPrev(): void {
+    if (this.world.tick % 150 === 0 && this.prevE.size > this.world.enemies.length + 8) {
+      const alive = new Set(this.world.enemies.map((e) => e.id));
+      for (const id of this.prevE.keys()) if (!alive.has(id)) this.prevE.delete(id);
+    }
     for (const p of this.world.players.values()) {
       const v = this.prevP.get(p.id);
       if (v) {

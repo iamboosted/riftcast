@@ -268,7 +268,11 @@ export class ClientSession implements Session {
       walls: st.zones.filter((z) => z.tag === 'wall' || z.tag === 'magmawall').map((z) => ({ x: z.pos.x, z: z.pos.z, angle: z.angle, len: z.len, thick: 0.6, h: z.pos.y + 2.6 })),
     };
     // forget interpolation for vanished entities
-    if (this.interp.size > 80) for (const k of [...this.interp.keys()]) if (k.startsWith('e:') && !byId.has(+k.slice(2)) && !st.enemies.some((e) => `e:${e.id}` === k)) this.interp.delete(k);
+    if (this.interp.size > st.enemies.length + st.players.size + 16) {
+      const live = new Set(st.enemies.map((e) => `e:${e.id}`));
+      for (const p of st.players.keys()) live.add(`p:${p}`);
+      for (const k of [...this.interp.keys()]) if (!live.has(k)) this.interp.delete(k);
+    }
   }
 
   /** Server-authoritative state for us + replay of not-yet-acknowledged inputs. */
