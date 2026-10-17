@@ -36,7 +36,7 @@ export function computeLayout(w: number, h: number, safe: SafeArea = { l: 0, r: 
   const buttons: TouchButton[] = [
     rel('primary', 0, 0, 50),
     rel('jump', -110, 30, 34),
-    rel('heavy', -92, -76, 35),
+    rel('heavy', -86, -80, 35),
     rel('signature', -14, -118, 33),
     rel('dash', 82, -100, 31),
     rel('swap', 78, -176, 23),

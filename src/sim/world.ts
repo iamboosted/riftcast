@@ -135,7 +135,7 @@ export class World {
       pitch: 0,
       hp: 100,
       maxHp: 100,
-      state: this.run.phase === 'room' ? 'spectating' : 'alive',
+      state: this.run.phase === 'lobby' ? 'alive' : 'spectating',
       gauntlets: o.gauntlets,
       active: 0,
       cd: [
@@ -178,6 +178,7 @@ export class World {
     delete this.run.votes[id];
     delete this.run.offers[id];
     this.refreshStats();
+    if (this.run.phase === 'reward') this.checkRewardDone();
   }
 
   setInput(id: string, input: PlayerInput): void {
@@ -321,7 +322,8 @@ export class World {
   }
 
   checkRewardDone(): void {
-    const ids = [...this.players.keys()];
+    const ids = [...this.players.keys()].filter((id) => this.run.offers[id]);
+    if (ids.length === 0) return;
     const done = ids.every((id) => this.run.picks[id] && (this.run.teamOffers.length === 0 || this.run.votes[id]));
     if (!done) return;
     for (const id of ids) {
