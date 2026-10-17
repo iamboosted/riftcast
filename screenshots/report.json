@@ -18,24 +18,8 @@
     "errors": []
   },
   {
-    "shot": "combat-medium",
-    "webgpu": true,
-    "particles": 521,
-    "draws": 83,
-    "enemies": 3,
-    "errors": []
-  },
-  {
     "shot": "gallery-high",
     "stats": "4 fps · WebGPU · High · particles 3,284 (GPU compute) · draws 73 · 6/43 stations live",
-    "errors": []
-  },
-  {
-    "shot": "combat-high",
-    "webgpu": true,
-    "particles": 524,
-    "draws": 54,
-    "enemies": 4,
     "errors": []
   },
   {
@@ -65,6 +49,22 @@
   },
   {
     "shot": "mobile-gallery",
+    "errors": []
+  },
+  {
+    "shot": "combat-medium",
+    "webgpu": true,
+    "particles": 489,
+    "draws": 77,
+    "enemies": 3,
+    "errors": []
+  },
+  {
+    "shot": "combat-high",
+    "webgpu": true,
+    "particles": 365,
+    "draws": 56,
+    "enemies": 4,
     "errors": []
   }
 ]
