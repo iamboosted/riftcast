@@ -1195,3 +1195,51 @@ body.touch .toast {
   bottom: auto;
   top: calc(70px + var(--sat));
 }
+
+/* ---------- aim target readout ---------- */
+.aimtarget {
+  position: absolute;
+  left: 0;
+  top: -58px;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+  font-size: 11px;
+  text-shadow: 0 1px 3px #000;
+}
+.aimtarget b {
+  display: block;
+  font-size: 12px;
+  color: #ffd8c8;
+}
+.aimtarget b.el {
+  color: #ffd36a;
+}
+.aimtarget em {
+  display: block;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #9fe8ff;
+  text-transform: uppercase;
+}
+.aimtarget .tb {
+  position: relative;
+  width: 90px;
+  height: 5px;
+  margin: 3px auto 0;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.aimtarget .tb i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #ff5a4a;
+}
+.aimtarget .tb s {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgba(140, 220, 255, 0.85);
+}

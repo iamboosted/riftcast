@@ -150,7 +150,7 @@ function encodeEnemy(e: Enemy): (string | number)[] {
   return [
     e.id, e.kind, e.faction, r2(e.pos.x), r2(e.pos.y), r2(e.pos.z), r2(e.yaw), Math.round(e.hp), Math.round(e.maxHp), e.state,
     (e.elite ? 1 : 0) | (e.boss ? 2 : 0) | (e.flying ? 4 : 0), r1(s.burn), r1(s.chill), r1(s.frozen), r1(s.poison), r1(s.shock), r1(s.wet), r1(s.blind),
-    r1(e.hitFlash), r2(e.spawnT), e.seed, e.phase, e.radius, e.height,
+    r1(e.hitFlash), r2(e.spawnT), e.seed, e.phase, e.radius, e.height, e.affix, Math.round(e.shield),
   ];
 }
 
@@ -204,6 +204,8 @@ export function decodeEnemy(a: (string | number)[], prev?: Enemy): Enemy {
   e.phase = n(21);
   e.radius = n(22);
   e.height = n(23);
+  e.affix = (a[24] as string) ?? '';
+  e.shield = n(25) || 0;
   return e;
 }
 

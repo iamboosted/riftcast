@@ -19,6 +19,7 @@ import type { V3 } from '../sim/vec';
 type MageRig = ReturnType<typeof buildMage>;
 
 interface EnemyVis {
+  shieldMesh?: THREE.Mesh;
   rig: ActorRig;
   dying: number;
   kind: string;
@@ -45,6 +46,8 @@ export class GameView {
   private pickups = new Map<number, THREE.Object3D>();
   private ghosts: Ghost[] = [];
   private ghostMat: THREE.MeshBasicNodeMaterial;
+  private shieldMat: THREE.MeshBasicNodeMaterial;
+  private shieldGeo = new THREE.IcosahedronGeometry(1, 2);
   private wallMat: THREE.MeshStandardNodeMaterial;
   private magmaMat: THREE.MeshStandardNodeMaterial;
   private roomSeed = -1;
@@ -81,6 +84,13 @@ export class GameView {
     const fres = pow(float(1).sub(abs(dot(normalView, positionViewDirection))), 1.5);
     gm.colorNode = vec4(vec3(gu.x, gu.y, gu.z).mul(fres.add(0.25)).mul(gu.w).mul(2), gu.w);
     this.ghostMat = gm;
+    // elite shield bubble: hex-ish fresnel shell with a scrolling shimmer
+    const sm = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    const sf = pow(float(1).sub(abs(dot(normalView, positionViewDirection))), 2.2);
+    const shimmer = mx_noise_float(positionWorld.mul(3).add(vec3(0, time.mul(1.5), 0))).mul(0.5).add(0.5);
+    const sa = sf.mul(shimmer.mul(0.6).add(0.5)).mul(0.9);
+    sm.colorNode = vec4(vec3(0.55, 0.85, 1.6).mul(sa), sa);
+    this.shieldMat = sm;
     this.wallMat = new THREE.MeshStandardNodeMaterial({ roughness: 0.9 });
     const wn = mx_noise_float(positionWorld.mul(1.3)).mul(0.5).add(0.5);
     this.wallMat.colorNode = mix(vec3(0.28, 0.2, 0.14), vec3(0.62, 0.46, 0.3), wn);
@@ -419,6 +429,29 @@ export class GameView {
       for (const sp of r.spinners) sp.rotation.y += dt * (e.boss ? 0.8 : 2.5) * speedAnim;
       for (const w of r.wings) w.rotation.z = Math.sin(tt * 30) * 0.5 * (w.userData.side ?? 1) * speedAnim;
       for (const o of [...r.spinners, ...r.wings]) o.traverse((m) => m.userData.fx && (m.userData.fx as THREE.Vector4).copy(fx4));
+      // affixes
+      if (e.shield > 0) {
+        if (!v.shieldMesh) {
+          v.shieldMesh = new THREE.Mesh(this.shieldGeo, this.shieldMat);
+          this.root.add(v.shieldMesh);
+        }
+        v.shieldMesh.visible = true;
+        v.shieldMesh.position.set(v.pos.x, v.pos.y + e.height * 0.5, v.pos.z);
+        v.shieldMesh.scale.set(e.radius * 1.7, e.height * 0.75, e.radius * 1.7);
+      } else if (v.shieldMesh?.visible) {
+        v.shieldMesh.visible = false;
+        this.fx.burst('frost', v.pos.x, v.pos.y + e.height * 0.5, v.pos.z, 1.4);
+      }
+      if (e.affix === 'hasted' && Math.random() < dt * 14)
+        this.fx.add.emit({ x: v.pos.x, y: v.pos.y + 0.3, z: v.pos.z, count: 1, posSpread: e.radius, vx: -Math.sin(e.yaw) * 6, vz: -Math.cos(e.yaw) * 6, life: 0.3, size: 0.6, sizeEnd: 0.9, color: 0xe0fff4, colorEnd: 0x8ff5d0, intensity: 1.2, alpha: 0.6, shape: 9, spin: 4 });
+      if (e.affix === 'volatile') {
+        const pulse = 0.5 + 0.5 * Math.sin(this.fx.time * 9 + e.seed);
+        this.fx.cores.add(v.pos.x, v.pos.y + e.height * 0.55, v.pos.z, e.radius * (1.4 + pulse * 0.8), new THREE.Color(0xff3a1a), 0.6 + pulse * 0.9, 0);
+      }
+      if (e.affix.startsWith('ward:')) {
+        const wel = e.affix.slice(5) as Element;
+        this.fx.decals.rune.set({ x: v.pos.x, y: v.pos.y + 0.02, z: v.pos.z, sx: e.radius * 2.2, sz: e.radius * 2.2, rot: this.fx.time, d: [0.5, 0, 1.2, e.id], color: new THREE.Color(ELEMENT_INFO[wel].main) });
+      }
       // windup glow
       if (e.state === 'windup' && Math.random() < dt * 30) {
         const acc = enemyAccent(e.faction);
@@ -452,6 +485,10 @@ export class GameView {
       fx4.x = Math.max(0, 1 - v.dying * 4);
       for (const o of [...v.rig.spinners, ...v.rig.wings]) o.traverse((m) => m.userData.fx && (m.userData.fx as THREE.Vector4).copy(fx4));
       v.rig.root.position.y -= dt * 0.4;
+      if (v.shieldMesh) {
+        this.root.remove(v.shieldMesh);
+        v.shieldMesh = undefined;
+      }
       if (v.dying > 0.65) {
         this.root.remove(v.rig.root);
         disposeGeometries(v.rig.root);

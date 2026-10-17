@@ -12,6 +12,7 @@ import { ELEMENT_INFO } from '../data/elements';
 import { isMobile, type QualityName } from '../core/quality';
 import { GameAudio } from '../audio/audio';
 import { SPELL_TIMING } from '../sim/spells';
+import { ENEMIES } from '../data/enemies';
 
 /** ?slowgpu lets the sim catch up on very slow (software) renderers used in automated screenshots. */
 const MAX_DT_DEFAULT = new URLSearchParams(location.search).has('slowgpu') ? 0.5 : 0.1;
@@ -494,7 +495,9 @@ export class Game {
 
     // ui
     if (isPlay && local) {
-      this.ui.updateHud(s, session.localId, { aimTarget: this.aimTarget >= 0, device: c.device, net: session.netStats(), bossName: this.bossName });
+      const te = this.aimTarget >= 0 ? s.enemies.find((e) => e.id === this.aimTarget) : undefined;
+      const target = te && !te.boss ? { name: ENEMIES[te.kind]?.name ?? te.kind, affix: te.affix, hp: te.hp / te.maxHp, shield: te.shield / te.maxHp, elite: te.elite } : null;
+      this.ui.updateHud(s, session.localId, { aimTarget: this.aimTarget >= 0, device: c.device, net: session.netStats(), bossName: this.bossName, target });
       if (this.touch.active) {
         const el = local.gauntlets[local.active];
         this.touch.setHud(el, local.cd[local.active], SPELL_TIMING[el].sigCd * local.stats.sigCooldown, local.charging ? local.charge : 0, local.dashCharges > 0);

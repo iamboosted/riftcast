@@ -3,6 +3,8 @@ import type { Element, Enemy } from './types';
 import { ENEMIES } from '../data/enemies';
 import { findCombo, type Reagent } from './comboTable';
 import { applyCombo } from './combos';
+import { affixDamage } from './affixes';
+import { addTelegraph } from './ai';
 import { V3 } from './vec';
 
 export interface DamageOpts {
@@ -64,7 +66,10 @@ export function damageEnemy(w: World, e: Enemy, base: number, el: Element, src: 
     wet: e.st.wet > 0,
     crit,
   });
-  e.hp -= amt;
+  const shieldBefore = e.shield;
+  const dealt = affixDamage(e, amt, el);
+  if (shieldBefore > 0 && e.shield <= 0) w.emit({ t: 'boom', x: e.pos.x, y: e.pos.y + e.height * 0.5, z: e.pos.z, r: e.radius * 2.2, el: 'storm' });
+  e.hp -= dealt;
   // bosses can't skip phases: clamp just below the next threshold until the transition plays
   if (e.boss && e.phase < 3) {
     const floor = (e.phase === 1 ? 0.66 : 0.33) * e.maxHp - 1;
@@ -73,8 +78,8 @@ export function damageEnemy(w: World, e: Enemy, base: number, el: Element, src: 
   e.hitFlash = 1;
   e.lastHitEl = el;
   if (src) e.lastHitBy = src;
-  if (p) p.dmgDealt += amt;
-  w.emit({ t: 'hit', id: e.id, x: e.pos.x, y: e.pos.y + e.height * 0.6, z: e.pos.z, amt: Math.round(amt), el, crit: crit ? 1 : 0 });
+  if (p) p.dmgDealt += dealt;
+  w.emit({ t: 'hit', id: e.id, x: e.pos.x, y: e.pos.y + e.height * 0.6, z: e.pos.z, amt: Math.round(dealt), el, crit: crit ? 1 : 0 });
   if (!o.noStatus) applyStatus(w, e, el, src, (o.statusAmt ?? 1) * (stats?.statusPower ?? w.teamStats.statusPower));
   if (o.knock && !e.boss) {
     const l = Math.hypot(o.knock.x, o.knock.z) || 1;
@@ -84,7 +89,7 @@ export function damageEnemy(w: World, e: Enemy, base: number, el: Element, src: 
     if (o.knock.lift && !e.elite) e.ky = Math.max(e.ky, o.knock.lift);
   }
   if (e.hp <= 0) killEnemy(w, e);
-  return amt;
+  return dealt;
 }
 
 export function applyStatus(w: World, e: Enemy, el: Element, src: string, power: number): void {
@@ -142,6 +147,7 @@ export function killEnemy(w: World, e: Enemy): void {
   if (!e.boss && w.rng.chance(e.elite ? 1 : 0.07)) {
     w.pickups.push({ id: w.id(), kind: 'heal', value: '18', pos: { x: e.pos.x, y: e.flying ? e.pos.y - 2.2 : e.pos.y, z: e.pos.z }, t: 0 });
   }
+  if (e.affix === 'volatile') addTelegraph(w, -1, 'circle', e.pos.x, e.pos.z, e.pos.y, { radius: 3.6, windup: 1.1, damage: 22, element: 'fire', knock: 9 }, 0);
   const boom = w.teamStats.explodeOnKill;
   if (boom > 0) blast(w, { ...e.pos }, 3, boom, e.lastHitEl ?? 'fire', e.lastHitBy ?? '', { small: true, noCombo: true });
 }

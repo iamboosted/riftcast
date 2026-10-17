@@ -303,3 +303,38 @@ describe('vfx + sim helpers', () => {
     expect(maxY).toBeGreaterThan(2.4);
   });
 });
+
+describe('elite affixes', () => {
+  it('shields absorb most damage until broken, wards nearly nullify one element', async () => {
+    const { affixDamage, applyAffix } = await import('../src/sim/affixes');
+    const w = new World(8);
+    w.addPlayer({ id: 'p', name: 'P', gauntlets: ['fire', 'frost'] });
+    w.startRun();
+    const e = w.spawnEnemy('husk', { x: 0, y: 0, z: -8 }, { affix: 'shielded' });
+    const shield = e.shield;
+    expect(shield).toBeGreaterThan(0);
+    const through = affixDamage(e, 10, 'fire');
+    expect(through).toBeCloseTo(1.5);
+    expect(e.shield).toBeCloseTo(shield - 8.5);
+    applyAffix(e, 'ward:frost');
+    e.shield = 0;
+    expect(affixDamage(e, 100, 'frost')).toBeCloseTo(10);
+    expect(affixDamage(e, 100, 'fire')).toBe(100);
+  });
+  it('elites always roll an affix; volatile foes leave a death telegraph', () => {
+    const w = new World(9);
+    w.addPlayer({ id: 'p', name: 'P', gauntlets: ['fire', 'frost'] });
+    w.startRun();
+    for (let i = 0; i < 10; i++) expect(w.spawnEnemy('warden', { x: i, y: 0, z: -6 }).affix).not.toBe('');
+    const v = w.spawnEnemy('husk', { x: 0, y: 0, z: -10 }, { affix: 'volatile' });
+    v.spawnT = 0;
+    const n = w.telegraphs.length;
+    damageEnemyDirect(w, v);
+    expect(w.telegraphs.length).toBe(n + 1);
+  });
+});
+
+import { damageEnemy } from '../src/sim/combat';
+function damageEnemyDirect(w: World, e: ReturnType<World['spawnEnemy']>) {
+  damageEnemy(w, e, e.hp * 20 + 1000, 'stone', 'p', { noStatus: true, noCrit: true });
+}

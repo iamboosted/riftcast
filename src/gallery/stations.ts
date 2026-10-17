@@ -363,6 +363,27 @@ export function buildStations(): Station[] {
     ],
   });
   out.push({
+    name: 'Elite Affixes',
+    sub: 'shielded · hasted · volatile · warded',
+    cat: 'misc',
+    el: null,
+    period: 3,
+    script: [
+      [0.3, (c) => {
+        const d = c.dummy(-4, -1.5, 'warden');
+        d.shield = d.shield > 0 ? 0 : d.maxHp * 0.4;
+      }],
+    ],
+    setup: (c) => {
+      const a = c.dummy(-4, -1.5, 'warden');
+      a.affix = 'shielded';
+      a.shield = a.maxHp * 0.4;
+      c.dummy(0, 2, 'husk').affix = 'hasted';
+      c.dummy(3, -2, 'sludge').affix = 'volatile';
+      c.dummy(5, 2, 'spitter').affix = 'ward:frost';
+    },
+  });
+  out.push({
     name: 'Boss: Ignavar',
     sub: 'Kiln Heart · phase aura',
     cat: 'misc',
@@ -424,5 +445,7 @@ export function enemyFromKind(kind: string, id: number, x: number, z: number): E
     kx: 0,
     kz: 0,
     ky: 0,
+    affix: '',
+    shield: 0,
   };
 }

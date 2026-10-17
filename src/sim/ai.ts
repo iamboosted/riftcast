@@ -132,7 +132,7 @@ function stepGrunt(w: World, e: Enemy, dt: number): void {
   }
 
   // chase
-  let speed = def.speed * (1 - Math.min(e.st.chill, 100) / 250);
+  let speed = def.speed * (1 - Math.min(e.st.chill, 100) / 250) * (e.affix === 'hasted' ? 1.4 : 1);
   if (!tgt) {
     // wander when blind or no target
     e.data.wander = (e.data.wander ?? 0) - dt;
@@ -235,7 +235,7 @@ function moveDir(w: World, e: Enemy, mx: number, mz: number, speed: number, dt: 
 function startAttack(w: World, e: Enemy, idx: number, tgt: Player): void {
   const a = ENEMIES[e.kind].attacks[idx];
   e.attackIdx = idx;
-  e.attackCds[idx] = a.cooldown * (0.85 + w.rng.next() * 0.3);
+  e.attackCds[idx] = a.cooldown * (0.85 + w.rng.next() * 0.3) * (e.affix === 'hasted' ? 0.7 : 1);
   e.state = 'windup';
   e.stateT = a.windup;
   e.yaw = Math.atan2(tgt.pos.x - e.pos.x, tgt.pos.z - e.pos.z);

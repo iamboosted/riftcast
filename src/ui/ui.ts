@@ -8,6 +8,7 @@ import { SPELL_TIMING } from '../sim/spells';
 import { ENEMIES } from '../data/enemies';
 import { QUALITY_ORDER, QUALITY } from '../core/quality';
 import { ROOM_SEQUENCE } from '../sim/room';
+import { AFFIX_INFO } from '../sim/affixes';
 
 export interface UiActions {
   playSolo(): void;
@@ -313,7 +314,8 @@ export class Ui {
   }
 
   // ---------------------------------------------------------------- HUD
-  updateHud(s: ViewState, localId: string, extra: { aimTarget: boolean; device: string; net: NetStats | null; bossName: string }) {
+  private targetEl: HTMLDivElement | null = null;
+  updateHud(s: ViewState, localId: string, extra: { aimTarget: boolean; device: string; net: NetStats | null; bossName: string; target?: { name: string; affix: string; hp: number; shield: number; elite: boolean } | null }) {
     const p = s.players.get(localId);
     if (!p) return;
     const el = p.gauntlets[p.active];
@@ -354,6 +356,18 @@ export class Ui {
       this.lastHud = html;
     }
     this.crosshair.classList.toggle('target', extra.aimTarget);
+    if (!this.targetEl) {
+      this.targetEl = document.createElement('div');
+      this.targetEl.className = 'aimtarget';
+      this.crosshair.appendChild(this.targetEl);
+    }
+    const tg = extra.target;
+    if (tg) {
+      const aff = tg.affix ? (tg.affix.startsWith('ward:') ? `Warded vs ${ELEMENT_INFO[tg.affix.slice(5) as Element].name}` : AFFIX_INFO[tg.affix]?.name ?? '') : '';
+      const html = `<b class="${tg.elite ? 'el' : ''}">${esc(tg.name)}</b>${aff ? `<em>${aff}</em>` : ''}<div class="tb"><i style="width:${Math.max(0, tg.hp * 100)}%"></i>${tg.shield > 0 ? `<s style="width:${Math.min(100, tg.shield * 100)}%"></s>` : ''}</div>`;
+      if (this.targetEl.innerHTML !== html) this.targetEl.innerHTML = html;
+      this.targetEl.style.display = 'block';
+    } else this.targetEl.style.display = 'none';
     this.crosshair.style.setProperty('--c', ELEMENT_INFO[el].css);
   }
 

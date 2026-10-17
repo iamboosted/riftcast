@@ -182,6 +182,10 @@ export interface Enemy {
   /** generic per-enemy scratch values for bosses */
   data: Record<string, number>;
   spawnT: number;
+  /** elite affix: '' | 'shielded' | 'hasted' | 'volatile' | 'ward:<element>' */
+  affix: string;
+  /** remaining shield pool (shielded affix) */
+  shield: number;
   /** who applied combo-relevant statuses (for combo credit) */
   statusBy: Partial<Record<'frozen' | 'wet' | 'burn' | 'poison' | 'shock', string>>;
   /** knockback velocity applied over a few ticks */

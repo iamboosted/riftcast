@@ -24,6 +24,7 @@ import { stepProjectiles } from './projectiles';
 import { stepZones } from './zones';
 import { stepEnemies, stepTelegraphs } from './ai';
 import { ELEMENTS } from './types';
+import { applyAffix } from './affixes';
 import { PLAYER_COLORS } from '../data/elements';
 import { V3 } from './vec';
 
@@ -354,7 +355,7 @@ export class World {
   }
 
   // ---------- spawning ----------
-  spawnEnemy(key: string, pos: V3, opts: { elite?: boolean } = {}): Enemy {
+  spawnEnemy(key: string, pos: V3, opts: { elite?: boolean; affix?: string } = {}): Enemy {
     const def = ENEMIES[key];
     const hp = def.hp * this.enemyHpMul * (def.boss ? 1 + 0.35 * (this.activePlayerCount() - 1) : 1);
     const gh = groundHeight(this.room, pos.x, pos.z, 50);
@@ -390,7 +391,11 @@ export class World {
       kx: 0,
       kz: 0,
       ky: 0,
+      affix: '',
+      shield: 0,
     };
+    const affix = opts.affix ?? (def.boss ? '' : e.elite || (this.run.roomIndex >= 3 && this.rng.chance(0.15)) ? this.rollAffix(def.resist) : '');
+    if (affix) applyAffix(e, affix);
     this.enemies.push(e);
     this.emit({ t: 'spawn', id: e.id, x: e.pos.x, y: e.pos.y, z: e.pos.z, faction: e.faction });
     return e;
@@ -537,6 +542,16 @@ export class World {
       const e = this.spawnEnemy(k, jitter);
       e.spawnT = 0.9 + i * 0.12;
     });
+  }
+
+  rollAffix(resist: Partial<Record<Element, number>>): string {
+    const r = this.rng.next();
+    if (r < 0.28) return 'shielded';
+    if (r < 0.52) return 'hasted';
+    if (r < 0.76) return 'volatile';
+    // ward against an element the faction is *not* already resistant to, so it changes what you cast
+    const opts = ELEMENTS.filter((el) => (resist[el] ?? 1) >= 1);
+    return `ward:${this.rng.pick(opts)}`;
   }
 
   alivePlayers(): Player[] {
