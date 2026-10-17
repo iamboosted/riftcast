@@ -17,6 +17,8 @@ import type { V3 } from '../sim/vec';
 
 installMobileGuards();
 
+const MAX_DT = new URLSearchParams(location.search).has('slowgpu') ? 0.5 : 0.1;
+
 interface Live {
   st: Station;
   i: number;
@@ -295,7 +297,7 @@ async function main() {
 
   gfx.renderer.setAnimationLoop(() => {
     const now = performance.now();
-    const raw = Math.min(0.1, (now - last) / 1000);
+    const raw = Math.min(MAX_DT, (now - last) / 1000);
     last = now;
     fpsAcc += raw;
     fpsN++;

@@ -74,7 +74,8 @@ export class Arena {
   private debrisData: { x: number; y: number; z: number; s: number; sp: number; ph: number; rx: number; ry: number }[] = [];
   private dummy = new THREE.Object3D();
 
-  constructor(private scene: THREE.Scene) {
+  constructor(private scene: THREE.Scene, lite = false) {
+    const oct = (n: number) => (lite ? Math.max(1, n - 2) : n);
     scene.add(this.group);
     scene.add(this.hemi);
     this.sun.position.set(-30, 50, 20);
@@ -88,8 +89,8 @@ export class Arena {
     const dir = normalize(positionLocal);
     const h = dir.y;
     const base = mix(mix(vec3(this.uSkyLow), vec3(this.uSkyHorizon), smoothstep(-0.35, 0.05, h)), vec3(this.uSkyTop), smoothstep(0.05, 0.75, h));
-    const neb = mx_fractal_noise_float(dir.mul(2.2).add(vec3(0, time.mul(0.004), 0)), 4, 2.0, 0.5);
-    const neb2 = mx_fractal_noise_float(dir.mul(5.0).add(vec3(3.1, 0, time.mul(0.006))), 3, 2.0, 0.5);
+    const neb = mx_fractal_noise_float(dir.mul(2.2).add(vec3(0, time.mul(0.004), 0)), oct(4), 2.0, 0.5);
+    const neb2 = mx_fractal_noise_float(dir.mul(5.0).add(vec3(3.1, 0, time.mul(0.006))), oct(3), 2.0, 0.5);
     const nebMask = smoothstep(0.0, 0.6, neb).mul(smoothstep(-0.2, 0.3, h));
     const nebCol = mix(vec3(this.uAccent).mul(0.55), vec3(this.uSkyHorizon).mul(1.6), neb2.mul(0.5).add(0.5));
     // stars: hashed cells on a cube-ish projection
@@ -116,7 +117,7 @@ export class Arena {
     const bevel = smoothstep(0.0, 0.35, border);
     // per-stone tint from the F1 distance pattern + low-frequency drift
     const cellTint = mx_noise_float(vec3(p.mul(0.11), 3.7)).mul(0.5).add(0.5);
-    const grain = mx_fractal_noise_float(vec3(p.mul(2.1), 0), 3, 2, 0.5).mul(0.5).add(0.5);
+    const grain = mx_fractal_noise_float(vec3(p.mul(2.1), 0), oct(3), 2, 0.5).mul(0.5).add(0.5);
     const moss = smoothstep(0.62, 0.8, mx_noise_float(vec3(p.mul(0.09), 11)).mul(0.5).add(0.5));
     let stone: any = mix(vec3(this.uStoneDark), vec3(this.uStone), grain.mul(0.45).add(cellTint.mul(0.55)));
     stone = mix(stone, stone.mul(vec3(0.75, 0.9, 0.8)), moss.mul(0.5));
@@ -137,7 +138,7 @@ export class Arena {
     // --- Undersides & pillars: rocky, with faint veins ---
     this.rockMat = new THREE.MeshStandardNodeMaterial({ roughness: 0.95, metalness: 0 });
     const pr = positionWorld;
-    const rn = mx_fractal_noise_float(pr.mul(0.45), 4, 2, 0.5).mul(0.5).add(0.5);
+    const rn = mx_fractal_noise_float(pr.mul(0.45), oct(4), 2, 0.5).mul(0.5).add(0.5);
     const strata = sin(pr.y.mul(3.0).add(rn.mul(4))).mul(0.5).add(0.5);
     this.rockMat.colorNode = mix(vec3(this.uStoneDark).mul(0.6), vec3(this.uStone).mul(0.85), rn.mul(0.7).add(strata.mul(0.3)));
     const vein = smoothstep(0.035, 0.0, abs(mx_noise_float(pr.mul(0.6)).sub(0.1)));
@@ -145,7 +146,7 @@ export class Arena {
     this.rockMat.emissiveNode = vec3(this.uAccent).mul(vein.mul(depthFade.mul(1.6).add(0.15)));
 
     this.pillarMat = new THREE.MeshStandardNodeMaterial({ roughness: 0.75, metalness: 0.05 });
-    const pn = mx_fractal_noise_float(pr.mul(vec3(1.2, 0.4, 1.2)), 3, 2, 0.5).mul(0.5).add(0.5);
+    const pn = mx_fractal_noise_float(pr.mul(vec3(1.2, 0.4, 1.2)), oct(3), 2, 0.5).mul(0.5).add(0.5);
     this.pillarMat.colorNode = mix(vec3(this.uStoneDark), vec3(this.uStone), pn);
     const band2 = smoothstep(0.92, 1.0, sin(pr.y.mul(2.2)).mul(0.5).add(0.5)).mul(smoothstep(0.2, 0.6, fract(pr.y.mul(0.13))));
     this.pillarMat.emissiveNode = vec3(this.uAccent).mul(band2.mul(sin(time.mul(2).add(pr.y)).mul(0.4).add(1.1)));

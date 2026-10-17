@@ -64,7 +64,7 @@ export class GameView {
   pingMarkers: { x: number; y: number; z: number; t: number; color: number; kind: string; pid: string }[] = [];
 
   constructor(private gfx: Gfx, private rig: CameraRig) {
-    this.arena = new Arena(gfx.scene);
+    this.arena = new Arena(gfx.scene, gfx.quality.name === 'low');
     this.fx = new Fx(gfx.renderer, gfx.isWebGPU, gfx.quality, {
       shake: (a) => rig.shake(a),
       flash: (c, a) => {

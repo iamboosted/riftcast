@@ -13,6 +13,9 @@ import { isMobile, type QualityName } from '../core/quality';
 import { GameAudio } from '../audio/audio';
 import { SPELL_TIMING } from '../sim/spells';
 
+/** ?slowgpu lets the sim catch up on very slow (software) renderers used in automated screenshots. */
+const MAX_DT = new URLSearchParams(location.search).has('slowgpu') ? 0.5 : 0.1;
+
 type Mode = 'menu' | 'lobby' | 'play' | 'end';
 
 /** Top-level orchestrator: renderer, input, session (solo/host/client), view, UI, audio. */
@@ -96,7 +99,30 @@ export class Game {
     else this.ui.show('title');
     if (params.has('autoplay')) this.playSolo();
     this.gfx.renderer.setAnimationLoop(() => this.frame());
+    // compile every actor/element material in the background so first casts don't hitch
+    setTimeout(() => this.warmup(), 300);
     (window as unknown as { __game: Game }).__game = this;
+  }
+
+  private async warmup() {
+    const { buildEnemy, buildMage } = await import('../render/actors');
+    const { ENEMIES } = await import('../data/enemies');
+    const g = new THREE.Group();
+    g.position.set(0, -200, 0);
+    const els: Element[] = ['fire', 'frost', 'storm', 'gale', 'stone', 'venom'];
+    els.forEach((el, i) => {
+      const m = buildMage(0x5ad1ff, i);
+      m.setElement(el, els[(i + 1) % 6]);
+      g.add(m.root);
+    });
+    for (const [k, d] of Object.entries(ENEMIES)) g.add(buildEnemy(d.shape, d.faction, k.length, d.radius, d.height).root);
+    this.gfx.scene.add(g);
+    try {
+      await this.gfx.renderer.compileAsync(this.gfx.scene, this.gfx.camera);
+    } catch (e) {
+      console.warn('warmup failed', e);
+    }
+    this.gfx.scene.remove(g);
   }
 
   private wireView() {
@@ -317,7 +343,7 @@ export class Game {
   private prevPause = 0;
   private frame() {
     const now = performance.now();
-    const rawDt = Math.min(0.1, (now - this.last) / 1000);
+    const rawDt = Math.min(MAX_DT, (now - this.last) / 1000);
     this.last = now;
     this.frameMs.push(rawDt * 1000);
     if (this.frameMs.length > 60) this.frameMs.shift();
@@ -406,8 +432,9 @@ export class Game {
         this.doPing('here');
       }
     } else if (this.mode === 'menu' && session === this.demo) {
-      this.driveDemo(input, rawDt);
+      this.driveDemo(input, rawDt, this.demo, 'demo', true);
     }
+    if (isPlay && this.bot && local) this.driveDemo(input, rawDt, session, session.localId, false);
 
     const events: SimEvent[] = session.update(rawDt, input);
     this.view.handleEvents(events, s, session.localId);
@@ -485,30 +512,44 @@ export class Game {
 
   /** Title-screen attract mode: a bot mage casting through a live room. */
   private demoT = 0;
-  private driveDemo(input: ReturnType<typeof emptyInput>, dt: number) {
-    const s = this.demo!.state;
-    const p = s.players.get('demo');
+  private bot = new URLSearchParams(location.search).has('bot');
+  private driveDemo(input: ReturnType<typeof emptyInput>, dt: number, sess: Session, pid: string, invuln: boolean) {
+    const s = sess.state;
+    const p = s.players.get(pid);
     if (!p) return;
     this.demoT += dt;
     if (p.state !== 'alive' || s.run.phase === 'defeat' || s.run.phase === 'victory') {
-      if (this.demoT > 4) {
+      if (invuln && this.demoT > 4) {
         this.startDemo();
         this.demoT = 0;
       }
       return;
     }
-    p.hp = p.maxHp; // invulnerable attract-mode mage
-    const e = s.enemies.find((q) => q.spawnT <= 0);
+    if (invuln) p.hp = p.maxHp; // invulnerable attract-mode mage
+    let e = null as (typeof s.enemies)[number] | null;
+    let bd = Infinity;
+    for (const q of s.enemies) {
+      if (q.spawnT > 0) continue;
+      const d = Math.hypot(q.pos.x - p.pos.x, q.pos.z - p.pos.z);
+      if (d < bd) {
+        bd = d;
+        e = q;
+      }
+    }
     if (s.run.phase === 'reward') {
-      const o = s.run.offers['demo'];
-      if (o) this.demo!.pick(o[0]);
-      if (s.run.teamOffers.length) this.demo!.vote(s.run.teamOffers[0]);
+      const o = s.run.offers[pid];
+      if (o && !s.run.picks[pid]) sess.pick(o[0]);
+      if (s.run.teamOffers.length && !s.run.votes[pid]) sess.vote(s.run.teamOffers[0]);
     }
     if (!e) return;
     const dx = e.pos.x - p.pos.x,
       dz = e.pos.z - p.pos.z;
     const d = Math.hypot(dx, dz);
     input.yaw = Math.atan2(-dx, -dz);
+    if (!invuln) {
+      this.rig.yaw = input.yaw;
+      this.rig.pitch = -0.2;
+    }
     input.ax = e.pos.x;
     input.ay = e.pos.y + e.height * 0.5;
     input.az = e.pos.z;

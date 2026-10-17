@@ -54,6 +54,7 @@ export function damageEnemy(w: World, e: Enemy, base: number, el: Element, src: 
     }
   }
   if (e.hp <= 0) return 0;
+  if (e.boss && (e.data.inv ?? 0) > 0) return 0;
   const crit = !o.noCrit && !!stats && w.rng.next() < stats.critChance;
   const comboMul = o.combo ? w.teamStats.comboDamage : 1;
   const amt = computeDamage(base, el, ENEMIES[e.kind]?.resist ?? {}, {
@@ -64,6 +65,11 @@ export function damageEnemy(w: World, e: Enemy, base: number, el: Element, src: 
     crit,
   });
   e.hp -= amt;
+  // bosses can't skip phases: clamp just below the next threshold until the transition plays
+  if (e.boss && e.phase < 3) {
+    const floor = (e.phase === 1 ? 0.66 : 0.33) * e.maxHp - 1;
+    if (e.hp < floor) e.hp = floor;
+  }
   e.hitFlash = 1;
   e.lastHitEl = el;
   if (src) e.lastHitBy = src;

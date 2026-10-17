@@ -121,12 +121,14 @@ const PATTERNS: Record<string, Pattern> = {
 export function stepBoss(w: World, b: Enemy, dt: number): void {
   const def = ENEMIES[b.kind];
   const frac = b.hp / b.maxHp;
+  if ((b.data.inv ?? 0) > 0) b.data.inv -= dt;
   const want = frac < 0.33 ? 3 : frac < 0.66 ? 2 : 1;
   if (want > b.phase) {
     b.phase = want;
     b.state = 'recover';
     b.stateT = 2.2;
     b.data.step = 0;
+    b.data.inv = 1.8;
     w.telegraphs = w.telegraphs.filter((t) => t.owner !== b.id);
     w.emit({ t: 'boss', id: b.id, phase: b.phase, name: def.name });
     addTelegraph(w, b.id, 'circle', b.pos.x, b.pos.z, 0, { radius: 9, windup: 1.2, damage: 18, element: b.kind === 'kiln' ? 'fire' : 'storm', knock: 16 }, 0);

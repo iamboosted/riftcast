@@ -93,7 +93,7 @@ export class LocalSession implements Session {
       this.freezeT -= dt * 1000;
       return [];
     }
-    this.acc += Math.min(dt, 0.1);
+    this.acc += Math.min(dt, 0.5);
     while (this.acc >= SIM_DT) {
       this.acc -= SIM_DT;
       this.snapshotPrev();
