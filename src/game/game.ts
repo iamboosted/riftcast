@@ -198,7 +198,7 @@ export class Game {
 
   // ---------------------------------------------------------------- modes
   private startDemo() {
-    this.demo = new LocalSession('demo', 'Demo', ['fire', 'gale'], 4242);
+    this.demo = new LocalSession('demo', 'Demo', ['fire', 'gale'], 4012);
     this.demo.world.startRun();
     this.session = this.demo;
     this.mode = 'menu';

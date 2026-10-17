@@ -366,6 +366,16 @@ export class GameView {
       fx4.x = p.hurtFlash > 0 ? p.hurtFlash * 0.9 : 0;
       fx4.z = 0;
       const charge = p.charging ? p.charge : 0;
+      // arms: casting snaps the right arm toward the aim pitch, charging brings both hands forward
+      const aimX = Math.max(-0.6, Math.min(0.9, p.pitch + 0.15));
+      const castR = p.castFlash > 0 || p.charging;
+      const tR = downed ? -0.3 : castR ? aimX : -1.1 + Math.sin(this.fx.time * 2 + p.color) * 0.05;
+      const tL = downed ? -0.3 : p.charging ? aimX - 0.15 : -1.05;
+      const kk = 1 - Math.exp(-dt * (castR ? 30 : 8));
+      r.armR.rotation.x += (tR - r.armR.rotation.x) * kk;
+      r.armL.rotation.x += (tL - r.armL.rotation.x) * kk;
+      r.armR.rotation.y += ((castR ? -0.12 : 0) - r.armR.rotation.y) * kk;
+      r.armL.rotation.y += ((p.charging ? 0.45 : 0) - r.armL.rotation.y) * kk;
       const hs = 1 + p.castFlash * 3 + charge * 1.6;
       r.handR.scale.setScalar(hs);
       r.handL.scale.setScalar(0.8);

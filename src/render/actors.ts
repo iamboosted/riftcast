@@ -314,7 +314,10 @@ export function buildEnemy(shape: string, faction: string, seed: number, radius:
 }
 
 /** Player mage: hooded robe, glowing gauntlets coloured by the active element. */
-export function buildMage(color: number, seed: number): ActorRig & { handL: THREE.Mesh; handR: THREE.Mesh; core: THREE.Mesh; setElement(el: Element, el2: Element): void } {
+export function buildMage(
+  color: number,
+  seed: number,
+): ActorRig & { handL: THREE.Mesh; handR: THREE.Mesh; armL: THREE.Group; armR: THREE.Group; core: THREE.Mesh; setElement(el: Element, el2: Element): void } {
   const rng = new Rng(seed);
   const b = new Builder();
   const robe = new THREE.Color(0x1b1a2a);
@@ -336,9 +339,12 @@ export function buildMage(color: number, seed: number): ActorRig & { handL: THRE
   // belt + rune sash
   b.add(new THREE.TorusGeometry(0.36, 0.05, 5, 14), 0x2c2436, 0, mat(0, 0.72, 0, Math.PI / 2, 0, 0));
   b.add(new THREE.BoxGeometry(0.1, 0.5, 0.02), trim, 0.8, mat(0.12 + rng.range(-0.02, 0.02), 0.45, -0.39, -0.15, 0, 0));
-  // arms
-  for (const s of [-1, 1]) b.add(new THREE.CylinderGeometry(0.07, 0.1, 0.55, 6), robe, 0, mat(s * 0.38, 1.12, -0.12, 0.9, 0, s * 0.2));
   const geo = b.build();
+  // arms: separate pivoted sleeves so casting can raise them toward the aim
+  const ab = new Builder();
+  ab.add(new THREE.CylinderGeometry(0.08, 0.11, 0.5, 6), robe, 0, mat(0, 0, -0.25, Math.PI / 2, 0, 0));
+  ab.add(new THREE.TorusGeometry(0.075, 0.025, 4, 10), trim, 1.3, mat(0, 0, -0.48));
+  const armGeo = ab.build();
   const body = new THREE.Mesh(geo, sharedMat(`mage-${color}`, color));
   body.userData.fx = new THREE.Vector4(0, 0, 0, 0);
   const root = new THREE.Group();
@@ -355,9 +361,21 @@ export function buildMage(color: number, seed: number): ActorRig & { handL: THRE
   const handGeo = new THREE.IcosahedronGeometry(0.13, 0);
   const handR = new THREE.Mesh(handGeo, handMat('fire'));
   const handL = new THREE.Mesh(handGeo, handMat('frost'));
-  handR.position.set(0.42, 1.0, -0.4);
-  handL.position.set(-0.42, 1.0, -0.36);
-  root.add(handR, handL);
+  const armR = new THREE.Group(),
+    armL = new THREE.Group();
+  armR.position.set(0.36, 1.3, -0.02);
+  armL.position.set(-0.36, 1.3, -0.02);
+  for (const a of [armR, armL]) {
+    const m = new THREE.Mesh(armGeo, body.material);
+    m.userData.fx = body.userData.fx;
+    a.add(m);
+    a.rotation.x = -1.1;
+    root.add(a);
+  }
+  handR.position.set(0, 0, -0.58);
+  handL.position.set(0, 0, -0.58);
+  armR.add(handR);
+  armL.add(handL);
   const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.09, 0), handMat('fire'));
   core.position.set(0, 1.25, 0.32);
   root.add(core);
@@ -375,6 +393,8 @@ export function buildMage(color: number, seed: number): ActorRig & { handL: THRE
     height: 1.9,
     handL,
     handR,
+    armL,
+    armR,
     core,
     setElement(el: Element, el2: Element) {
       handR.material = getMat(el);
