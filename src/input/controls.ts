@@ -54,6 +54,7 @@ export class KeyboardMouse {
   mouseR = false;
   locked = false;
   enabled = true;
+  onUnlock: (() => void) | null = null;
   constructor(private el: HTMLElement, private c: ControlState, private settings: Settings) {
     window.addEventListener('keydown', (e) => this.key(e, true));
     window.addEventListener('keyup', (e) => this.key(e, false));
@@ -81,8 +82,10 @@ export class KeyboardMouse {
     });
     el.addEventListener('contextmenu', (e) => e.preventDefault());
     document.addEventListener('pointerlockchange', () => {
+      const was = this.locked;
       this.locked = document.pointerLockElement === this.el;
       if (!this.locked) this.mouseL = this.mouseR = false;
+      if (was && !this.locked) this.onUnlock?.();
     });
     window.addEventListener('mousemove', (e) => {
       if (!this.locked) return;

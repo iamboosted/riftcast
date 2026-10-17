@@ -47,3 +47,24 @@ A running log of design calls, with the reasoning behind each.
 ## Input
 - **Touch:** a floating move stick on the left 42%. The right side is an aim stick: drag maps 1:1 to camera rotation, and pushing to the rim keeps turning. The cast buttons (primary/heavy) also aim while held and dragged, so a single thumb can fire and steer. The button layout is computed by a pure function (`touchLayout.ts`), unit tested to keep the central action area clear and every button on-screen inside the safe-area insets.
 - **Aim assist:** the cast direction snaps to the enemy nearest the crosshair inside a cone: 11° touch, 7° pad, 1.5° mouse. It can be turned off in Settings.
+
+## Later calls (same day)
+- **Pages deploys from `main`.** Pages was enabled while the repo was empty, so the `github-pages` environment only accepts `main`. Development happens on `master` and every push is mirrored to `main`. CI (tests, build, gitleaks) runs on both; the deploy job runs only on `main`.
+- **Multiplayer transport: Trystero** (Nostr relays for signalling, then direct WebRTC data channels) rather than PeerJS. There's no broker to rely on, it has several public relay fallbacks, and the API is tiny. It sits behind the `Transport` interface (`src/net/transport.ts`), which also has a deterministic in-memory `LoopbackHub` (virtual clock, latency/jitter, loss on unreliable channels, per-link ordering on reliable ones) for tests. Payloads are JSON strings so the perf overlay can count bytes.
+- **Netcode:** the host steps the World at 30 Hz and consumes one queued input per remote player per tick (with a 4-input jitter cap). It broadcasts SimEvents every tick and full snapshots at 15 Hz. Clients:
+  - send their last 4 inputs every tick for redundancy;
+  - predict their own movement with the same `stepMovement` the host runs, and reconcile on each snapshot's ack (replaying unacknowledged inputs, with the visual correction smoothed out);
+  - interpolate everyone else 100 ms in the past;
+  - regenerate room geometry locally from `(seed, index)`, since geometry is independent of player count (unit tested);
+  - advance telegraph/zone timers between snapshots so wind-ups stay smooth.
+- **Spell projectiles aren't predicted on clients.** A client sees its own projectile after ~RTT/2. Cast sound and muzzle flash still fire on the host event. This keeps damage and combos strictly host-authoritative. Predicted cosmetic projectiles are a listed next step.
+- **Trust boundary:** the host sanitises every remote input (clamped move vector, aim within ±500 m, 8-bit counters). It validates gauntlets and ignores unknown commands. Clients only accept snapshots and events from the peer that welcomed them. There's an integration test for forged events, forged snapshots, fake damage commands and absurd inputs.
+- **Drop-in:** players who join mid-run are `spectating` (their camera follows a living teammate) and spawn at the next room. Reward completion only waits for players who were offered rewards.
+- **Bosses can't skip phases:** damage clamps HP just under the next threshold until the phase transition plays, followed by 1.8 s of invulnerability with a shockwave telegraph. Without this, burst combos could delete a boss through two phases at once.
+- **Dynamic lights:** a fixed pool of point lights (2/4/6 by preset) flashes on explosions, novas, strikes and combos, and follows glowing heavy projectiles. The light count never changes, so there are no shader recompiles.
+- **3D spikes:** instanced erupting cones (ice and rock materials) for Whiteout, frost patches, Glacier Lance paths, Shatter, Flash Freeze, Bulwark walls and boulder impacts. Frost and Stone get real silhouettes rather than only sprites.
+- **Pings:** G / D-pad up / tap ping is contextual ("attack" when the crosshair is on an enemy, otherwise "here"). H / D-pad down = help, C / D-pad left = combo. On touch, long-press ping opens a 4-way wheel. Markers are 3D beacons plus screen-space labels that clamp to the screen edge.
+- **The touch HUD moves to the top-left** so both bottom corners stay free for thumbs. Safe-area insets are measured from a probe element, since `env()` can't be read back from CSS variables.
+- **Shader warm-up:** after the title appears, one of every actor and element material is built off-screen and passed to `renderer.compileAsync`, so first casts don't hitch.
+- **Test-only URL flags:** `?bot` (the local mage auto-fights and auto-picks boons), `?slowgpu` (lets the sim catch up with 0.5 s frames on software renderers), `?autoplay`, `?webgl`, `?quality=`.
+- **Arena shader cost scales with quality:** Low drops two noise octaves on the sky, floor and rock shaders.

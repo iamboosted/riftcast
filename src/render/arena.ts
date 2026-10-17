@@ -91,8 +91,8 @@ export class Arena {
     const base = mix(mix(vec3(this.uSkyLow), vec3(this.uSkyHorizon), smoothstep(-0.35, 0.05, h)), vec3(this.uSkyTop), smoothstep(0.05, 0.75, h));
     const neb = mx_fractal_noise_float(dir.mul(2.2).add(vec3(0, time.mul(0.004), 0)), oct(4), 2.0, 0.5);
     const neb2 = mx_fractal_noise_float(dir.mul(5.0).add(vec3(3.1, 0, time.mul(0.006))), oct(3), 2.0, 0.5);
-    const nebMask = smoothstep(0.0, 0.6, neb).mul(smoothstep(-0.2, 0.3, h));
-    const nebCol = mix(vec3(this.uAccent).mul(0.55), vec3(this.uSkyHorizon).mul(1.6), neb2.mul(0.5).add(0.5));
+    const nebMask = smoothstep(0.05, 0.75, neb).mul(smoothstep(-0.2, 0.3, h));
+    const nebCol = mix(vec3(this.uAccent).mul(0.45), vec3(this.uSkyHorizon).mul(1.0), neb2.mul(0.5).add(0.5));
     // stars: hashed cells on a cube-ish projection
     const cell = floor(dir.mul(160));
     const rnd = hash(dot(cell, vec3(12.9898, 78.233, 37.719)));
@@ -101,7 +101,7 @@ export class Arena {
     // rift band: a glowing tear across the sky
     const band = abs(dir.y.sub(dir.x.mul(0.35)).sub(0.32).add(mx_noise_float(dir.mul(3)).mul(0.04)));
     const rift = smoothstep(0.05, 0.0, band).mul(smoothstep(-0.6, 0.6, dir.z)).mul(1.8);
-    skyMat.colorNode = base.add(nebCol.mul(nebMask).mul(0.55)).add(vec3(starMask.mul(2.2))).add(vec3(this.uAccent).mul(rift));
+    skyMat.colorNode = base.add(nebCol.mul(nebMask).mul(0.5)).add(vec3(starMask.mul(2.2))).add(vec3(this.uAccent).mul(rift));
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(400, 32, 16), skyMat);
     this.sky.renderOrder = -10;
     this.sky.frustumCulled = false;

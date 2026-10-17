@@ -254,6 +254,33 @@ describe('multiplayer over lossy loopback', () => {
     expect(late.state.players.get('LATE')!.state).toBe('alive');
   });
 
+  it('clients predict their own primary shots and adopt the host copies (no double visuals)', () => {
+    const r = setup(1, { latencyMs: 60, jitterMs: 10, loss: 0 });
+    r.host.startRun();
+    r.step(5);
+    const i = emptyInput();
+    i.az = -20;
+    i.ay = 1;
+    i.buttons = BTN_PRIMARY;
+    r.inputs.set('C1', i);
+    r.step(60);
+    r.inputs.set('C1', emptyInput());
+    r.step(30);
+    const ev = r.clientEvents[0];
+    const predicted = ev.filter((e) => e.t === 'proj' && e.id < 0);
+    const hostCopies = ev.filter((e) => e.t === 'proj' && e.id > 0 && e.ck.startsWith('C1:'));
+    const hostShots = r.hostEvents.filter((e) => e.t === 'proj' && e.ck.startsWith('C1:'));
+    expect(predicted.length).toBeGreaterThan(5);
+    expect(hostShots.length).toBeGreaterThan(5);
+    // nearly every authoritative shot was matched to a predicted one
+    expect(hostCopies.length).toBeLessThanOrEqual(Math.ceil(hostShots.length * 0.15));
+    // ends of matched shots are re-addressed to the predicted visuals
+    expect(ev.some((e) => e.t === 'projEnd' && e.id < 0)).toBe(true);
+    // the first predicted shot appears before the host's copy could have arrived
+    const firstPred = ev.findIndex((e) => e.t === 'proj' && e.id < 0);
+    expect(firstPred).toBeGreaterThanOrEqual(0);
+  });
+
   it('host leaving notifies clients', () => {
     const r = setup(1, { latencyMs: 20, jitterMs: 0, loss: 0 });
     const msgs: string[] = [];

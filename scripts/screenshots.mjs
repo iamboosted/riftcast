@@ -45,8 +45,14 @@ for (const q of presets) {
     const { p, ctx, errors } = await page({ width: 960, height: 540 });
     await p.goto(`${base}vfx-gallery/?quality=${q}&slowgpu`);
     await waitFor(p, () => !!window.__gallery, 60000);
-    await p.evaluate(() => window.__gallery.focus(19, 26));
-    await p.waitForTimeout(14000);
+    await p.evaluate(() => window.__gallery.focus(23, 15));
+    await p.waitForTimeout(12000);
+    // step at real-time resolution and land on the stations' key moments
+    await p.evaluate(() => {
+      window.__gallery.setMaxDt(1 / 30);
+      window.__gallery.seek();
+    });
+    await p.waitForTimeout(9000);
     const stats = await p.evaluate(() => document.getElementById('g-stats')?.textContent ?? '');
     await p.screenshot({ path: `${outDir}/gallery-${q}.jpg`, type: 'jpeg', quality: 82 });
     report.push({ shot: `gallery-${q}`, stats, errors: errors.slice(0, 3) });
@@ -56,7 +62,31 @@ for (const q of presets) {
     const { p, ctx, errors } = await page({ width: 960, height: 540 });
     await p.goto(`${base}?autoplay&bot&slowgpu&quality=${q}`);
     await waitFor(p, () => window.__game?.session?.state.enemies.some((e) => e.spawnT <= 0), 150000);
-    await p.waitForTimeout(9000);
+    // stage a combat moment: face the nearest enemy from ~9 m, then cast at real-time step resolution
+    await p.evaluate(() => {
+      const g = window.__game;
+      g.maxDt = 1 / 30;
+      const s = g.session;
+      const me = s.state.players.get(s.localId);
+      const e = s.state.enemies.find((q) => q.spawnT <= 0);
+      if (me && e) {
+        const dx = me.pos.x - e.pos.x,
+          dz = me.pos.z - e.pos.z;
+        const d = Math.hypot(dx, dz) || 1;
+        if (d > 11) {
+          me.pos.x = e.pos.x + (dx / d) * 9;
+          me.pos.z = e.pos.z + (dz / d) * 9;
+          me.pos.y = e.pos.y;
+        }
+      }
+    });
+    await p.waitForTimeout(4000);
+    await p.evaluate(() => {
+      const g = window.__game;
+      // the bot casts its signature whenever demoT crosses a multiple of 9 s
+      g.demoT = Math.ceil(g.demoT / 9) * 9 - 0.02;
+    });
+    await p.waitForTimeout(6000);
     const info = await p.evaluate(() => {
       const g = window.__game;
       return { webgpu: g.gfx.isWebGPU, particles: g.view.fx.particleCount, draws: g.gfx.drawCalls, enemies: g.session.state.enemies.length };

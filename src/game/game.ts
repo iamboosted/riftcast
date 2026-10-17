@@ -14,7 +14,7 @@ import { GameAudio } from '../audio/audio';
 import { SPELL_TIMING } from '../sim/spells';
 
 /** ?slowgpu lets the sim catch up on very slow (software) renderers used in automated screenshots. */
-const MAX_DT = new URLSearchParams(location.search).has('slowgpu') ? 0.5 : 0.1;
+const MAX_DT_DEFAULT = new URLSearchParams(location.search).has('slowgpu') ? 0.5 : 0.1;
 
 type Mode = 'menu' | 'lobby' | 'play' | 'end';
 
@@ -80,6 +80,10 @@ export class Game {
     this.kbm = new KeyboardMouse(canvas, this.controls, this.settings);
     this.pads = new Gamepads(this.controls, this.settings);
     this.touch = new TouchControls(uiRoot, this.controls, this.settings);
+    // Esc releases pointer lock without a key event reaching us: treat losing the lock as pause
+    this.kbm.onUnlock = () => {
+      if (this.mode === 'play' && this.ui.current === 'hud' && this.controls.device === 'kbm') this.pause();
+    };
     this.wireView();
     this.applySettings();
     // first gesture unlocks WebAudio (iOS)
@@ -149,6 +153,12 @@ export class Game {
       this.ui.banner(kind === 'boss' ? 'Boss Chamber' : kind === 'elite' ? 'Elite Chamber' : `Chamber ${idx + 1}`, kind === 'combat' ? 'Clear the rift-spawn' : kind === 'elite' ? 'Something larger stirs' : 'Face the warden of the rift');
       if (this.ui.current === 'reward') this.ui.show('hud');
       this.audio.room(kind);
+      // rift travel: white-out flash + FOV punch into the new chamber
+      this.gfx.u.flash.value.set(0xe8deff);
+      this.gfx.u.flashAmt.value = 1.2;
+      this.rig.fovKick = 14;
+      this.rig.yaw = 0;
+      this.rig.pitch = -0.12;
     };
     v.onClear = () => {
       if (this.mode === 'play') this.ui.banner('Chamber Cleared', 'Choose your boons', 'clear');
@@ -344,7 +354,7 @@ export class Game {
   private prevPause = 0;
   private frame() {
     const now = performance.now();
-    const rawDt = Math.min(MAX_DT, (now - this.last) / 1000);
+    const rawDt = Math.min(this.maxDt, (now - this.last) / 1000);
     this.last = now;
     this.frameMs.push(rawDt * 1000);
     if (this.frameMs.length > 60) this.frameMs.shift();
@@ -393,7 +403,15 @@ export class Game {
     const input = emptyInput();
     let pp = new THREE.Vector3();
     if (local) {
-      const lp = this.view.playerRenderPos(local.id) ?? local.pos;
+      // spectators (late joiners, fallen players) follow a living teammate
+      let follow = local;
+      if (local.state === 'spectating' || local.state === 'dead') {
+        for (const q of s.players.values()) if (q.state === 'alive') {
+          follow = q;
+          break;
+        }
+      }
+      const lp = this.view.playerRenderPos(follow.id) ?? follow.pos;
       pp = new THREE.Vector3(lp.x, lp.y, lp.z);
     }
     if (isPlay && local) {
@@ -515,6 +533,8 @@ export class Game {
   /** Title-screen attract mode: a bot mage casting through a live room. */
   private demoT = 0;
   private bot = new URLSearchParams(location.search).has('bot');
+  /** frame-time cap; automation lowers it to step slowly on software renderers */
+  maxDt = MAX_DT_DEFAULT;
   private driveDemo(input: ReturnType<typeof emptyInput>, dt: number, sess: Session, pid: string, invuln: boolean) {
     const s = sess.state;
     const p = s.players.get(pid);

@@ -17,7 +17,7 @@ import type { V3 } from '../sim/vec';
 
 installMobileGuards();
 
-const MAX_DT = new URLSearchParams(location.search).has('slowgpu') ? 0.5 : 0.1;
+let MAX_DT = new URLSearchParams(location.search).has('slowgpu') ? 0.5 : 0.1;
 
 interface Live {
   st: Station;
@@ -406,7 +406,16 @@ async function main() {
     }
     stats.textContent = `${fps.toFixed(0)} fps · ${gfx.isWebGPU ? 'WebGPU' : 'WebGL2'} · ${gfx.quality.label} · particles ${view.fx.particleCount.toLocaleString()} (${view.fx.add.gpu ? 'GPU compute' : 'CPU'}) · draws ${gfx.drawCalls} · ${activeCount}/${live.length} stations live`;
   });
-  (window as unknown as { __gallery: unknown }).__gallery = { gfx, view, live, focus: (i: number, d = 20) => focus(live[i], d), setSlow: (s: number) => (timeScale = s) };
+  (window as unknown as { __gallery: unknown }).__gallery = { gfx, view, live, focus: (i: number, d = 20) => focus(live[i], d), setSlow: (s: number) => (timeScale = s),
+    setMaxDt: (v: number) => (MAX_DT = v),
+    /** jump every station to just before its last scripted action (automation) */
+    seek: () => {
+      for (const L of live) {
+        const at = L.st.script[L.st.script.length - 1][0];
+        L.t = Math.floor(L.t / L.st.period) * L.st.period + Math.max(0, at - 0.02);
+      }
+    },
+  };
 }
 
 main().catch((e) => {

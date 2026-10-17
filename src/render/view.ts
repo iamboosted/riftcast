@@ -350,7 +350,7 @@ export class GameView {
       r.body.rotation.x = downed ? -1.2 : Math.max(-0.25, Math.min(0.25, -(p.vel.x * Math.sin(p.yaw) + p.vel.z * Math.cos(p.yaw)) * 0.02));
       r.body.position.y = downed ? 0.35 : Math.sin(this.fx.time * 3 + p.color) * 0.03 + (p.grounded ? 0 : 0.05);
       const fx4 = r.body.userData.fx as THREE.Vector4;
-      fx4.x = p.hurtFlash > 0 ? p.hurtFlash * 2 : 0;
+      fx4.x = p.hurtFlash > 0 ? p.hurtFlash * 0.9 : 0;
       fx4.z = 0;
       const charge = p.charging ? p.charge : 0;
       const hs = 1 + p.castFlash * 3 + charge * 1.6;

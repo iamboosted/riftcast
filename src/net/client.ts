@@ -7,7 +7,9 @@ import { generateRoom, type Room } from '../sim/room';
 import { copyMoveState, newMoveState, stepMovement, type Colliders } from '../sim/movement';
 import { aggregateBoons, baseStats } from '../data/boons';
 import type { V3 } from '../sim/vec';
-import type { RunInfo } from '../sim/world';
+import type { RunInfo, World } from '../sim/world';
+import { castPrimary, SPELL_TIMING } from '../sim/spells';
+import { BTN_HEAVY, BTN_PRIMARY } from '../sim/types';
 
 interface Sample {
   t: number;
@@ -47,6 +49,14 @@ export class ClientSession implements Session {
   private snaps = 0;
   private stats = { t: 0, bin: 0, bout: 0, snaps: 0, inK: 0, outK: 0, sps: 0 };
   lastSnapTick = -1;
+  /** client-side predicted primary shots (cosmetic) awaiting the host's authoritative copy */
+  private predicted: { id: number; spell: string; t: number }[] = [];
+  private predCast: number[] = [];
+  private idMap = new Map<number, number>();
+  private predId = -1;
+  private predCd = 0;
+  private clock = 0;
+  predictShots = true;
 
   constructor(
     public transport: Transport,
@@ -75,7 +85,10 @@ export class ClientSession implements Session {
     t.on('snap', (s: Snapshot, from) => from === this.hostId && this.onSnap(s));
     t.on('ev', (ev: SimEvent[], from) => {
       if (from !== this.hostId || !Array.isArray(ev)) return;
-      for (const e of ev) this.events.push(e);
+      for (const e of ev) {
+        const out = this.reconcileEvent(e);
+        if (out) this.events.push(out);
+      }
     });
     t.onPeerJoin(() => this.sayHello());
     t.onPeerLeave((id) => {
@@ -100,6 +113,51 @@ export class ClientSession implements Session {
     }
     this.hostId = from;
     this.connected = true;
+  }
+
+  /** Swap host events for our own predicted shots onto the visuals we already spawned. */
+  private reconcileEvent(e: SimEvent): SimEvent | null {
+    if (e.t === 'cast' && e.pid === this.localId && e.slot === 'primary' && this.predCast.length) {
+      this.predCast.shift();
+      return null;
+    }
+    if (e.t === 'proj' && e.ck.startsWith(`${this.localId}:`)) {
+      const i = this.predicted.findIndex((q) => q.spell === e.sp);
+      if (i >= 0) {
+        this.idMap.set(e.id, this.predicted[i].id);
+        this.predicted.splice(i, 1);
+        return null;
+      }
+    }
+    if ((e.t === 'projEnd' || e.t === 'projBounce') && this.idMap.has(e.id)) {
+      const id = this.idMap.get(e.id)!;
+      if (e.t === 'projEnd') this.idMap.delete(e.id);
+      return { ...e, id };
+    }
+    return e;
+  }
+
+  private predictCast(me: Player, inp: PlayerInput): void {
+    this.predCd = Math.max(0, this.predCd - SIM_DT);
+    const phaseOk = this.state.run.phase === 'room' || this.state.run.phase === 'cleared';
+    if (!this.predictShots || !phaseOk || me.state !== 'alive') return;
+    if ((inp.buttons & BTN_PRIMARY) === 0 || (inp.buttons & BTN_HEAVY) !== 0 || this.predCd > 0) return;
+    const el = me.gauntlets[me.active];
+    this.predCd = SPELL_TIMING[el].primaryCd;
+    const fake = {
+      id: () => this.predId--,
+      projectiles: [] as unknown[],
+      emit: (ev: SimEvent) => {
+        if (ev.t === 'proj') this.predicted.push({ id: ev.id, spell: ev.sp, t: this.clock });
+        if (ev.t === 'cast') this.predCast.push(this.clock);
+        this.events.push(ev);
+      },
+    };
+    const shooter = { ...me, pos: { ...me.pos }, yaw: inp.yaw, castSeq: 0 } as Player;
+    castPrimary(fake as unknown as World, shooter, el, inp);
+    // forget predictions the host never confirmed (cooldown mismatch, death, ...)
+    while (this.predicted.length && this.clock - this.predicted[0].t > 1) this.predicted.shift();
+    while (this.predCast.length && this.clock - this.predCast[0] > 1) this.predCast.shift();
   }
 
   // ---------------------------------------------------------------- snapshots
@@ -217,6 +275,8 @@ export class ClientSession implements Session {
         me.grounded = this.pred.grounded;
         me.dashCharges = this.pred.dashCharges;
       }
+      this.clock += SIM_DT;
+      if (me) this.predictCast(me, inp);
       // advance client-side timers between snapshots for smooth telegraphs/zones
       for (const tg of this.state.telegraphs) tg.t = Math.min(tg.dur, tg.t + SIM_DT);
       for (const z of this.state.zones) z.life = Math.max(0, z.life - SIM_DT);
