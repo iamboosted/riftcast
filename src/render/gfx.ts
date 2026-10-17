@@ -24,7 +24,7 @@ export class Gfx {
     hurt: uniform(0),
     exposure: uniform(1),
     bloomStrength: uniform(0.9),
-    saturation: uniform(1.12),
+    saturation: uniform(1.04),
     desat: uniform(0),
   };
   private bloomNode: ReturnType<typeof bloom> | null = null;

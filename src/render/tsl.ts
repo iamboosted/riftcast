@@ -32,6 +32,7 @@ export const {
   mx_fractal_noise_float,
   mx_noise_float,
   mx_worley_noise_float,
+  mx_worley_noise_vec2,
   normalView,
   normalWorld,
   normalize,

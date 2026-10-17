@@ -11,6 +11,8 @@ import {
   time,
   mx_worley_noise_float,
   mx_noise_float,
+  mx_worley_noise_vec2,
+  atan,
   mx_fractal_noise_float,
   abs,
   sin,
@@ -42,10 +44,10 @@ export interface Theme {
 }
 
 export const THEMES: Theme[] = [
-  { skyTop: 0x07041a, skyHorizon: 0x3c1c66, skyLow: 0x120826, accent: 0xb48cff, stone: 0x6a6280, stoneDark: 0x2a2436, fog: 0x1c1030, sun: 0xd9c8ff },
-  { skyTop: 0x0e0408, skyHorizon: 0x7a2c14, skyLow: 0x1e0806, accent: 0xff8a3a, stone: 0x7a6a60, stoneDark: 0x30241e, fog: 0x2a120c, sun: 0xffd2a8 },
-  { skyTop: 0x020c16, skyHorizon: 0x0f5262, skyLow: 0x041820, accent: 0x4affd9, stone: 0x5d7276, stoneDark: 0x1c282c, fog: 0x0a2228, sun: 0xc8fff4 },
-  { skyTop: 0x0c0c1c, skyHorizon: 0x7a5630, skyLow: 0x1a1210, accent: 0xffd36a, stone: 0x7e7666, stoneDark: 0x2e2a24, fog: 0x241c14, sun: 0xfff0c8 },
+  { skyTop: 0x07041a, skyHorizon: 0x3c1c66, skyLow: 0x120826, accent: 0xb48cff, stone: 0x5c5a66, stoneDark: 0x1c1a24, fog: 0x1c1030, sun: 0xd9c8ff },
+  { skyTop: 0x0e0408, skyHorizon: 0x7a2c14, skyLow: 0x1e0806, accent: 0xff8a3a, stone: 0x6a5e58, stoneDark: 0x241a16, fog: 0x2a120c, sun: 0xffd2a8 },
+  { skyTop: 0x020c16, skyHorizon: 0x0f5262, skyLow: 0x041820, accent: 0x4affd9, stone: 0x56666a, stoneDark: 0x161e22, fog: 0x0a2228, sun: 0xc8fff4 },
+  { skyTop: 0x0c0c1c, skyHorizon: 0x7a5630, skyLow: 0x1a1210, accent: 0xffd36a, stone: 0x6c665c, stoneDark: 0x24201a, fog: 0x241c14, sun: 0xfff0c8 },
 ];
 
 const col = (hex: number) => new THREE.Color(hex);
@@ -65,8 +67,9 @@ export class Arena {
   floorMat: THREE.MeshStandardNodeMaterial;
   rockMat: THREE.MeshStandardNodeMaterial;
   pillarMat: THREE.MeshStandardNodeMaterial;
-  hemi = new THREE.HemisphereLight(0x8890ff, 0x201018, 1.3);
-  sun = new THREE.DirectionalLight(0xffffff, 2.2);
+  hemi = new THREE.HemisphereLight(0x8890ff, 0x201018, 0.75);
+  rim = new THREE.DirectionalLight(0xb48cff, 1.6);
+  sun = new THREE.DirectionalLight(0xffffff, 2.8);
   private debris: THREE.InstancedMesh | null = null;
   private debrisData: { x: number; y: number; z: number; s: number; sp: number; ph: number; rx: number; ry: number }[] = [];
   private dummy = new THREE.Object3D();
@@ -76,6 +79,8 @@ export class Arena {
     scene.add(this.hemi);
     this.sun.position.set(-30, 50, 20);
     scene.add(this.sun);
+    this.rim.position.set(30, 18, -40);
+    scene.add(this.rim);
     scene.fog = new THREE.FogExp2(0x1c1030, 0.009);
 
     // --- Sky: gradient + nebula + stars + rift band ---
@@ -95,7 +100,7 @@ export class Arena {
     // rift band: a glowing tear across the sky
     const band = abs(dir.y.sub(dir.x.mul(0.35)).sub(0.32).add(mx_noise_float(dir.mul(3)).mul(0.04)));
     const rift = smoothstep(0.05, 0.0, band).mul(smoothstep(-0.6, 0.6, dir.z)).mul(1.8);
-    skyMat.colorNode = base.add(nebCol.mul(nebMask).mul(0.9)).add(vec3(starMask.mul(2.2))).add(vec3(this.uAccent).mul(rift));
+    skyMat.colorNode = base.add(nebCol.mul(nebMask).mul(0.55)).add(vec3(starMask.mul(2.2))).add(vec3(this.uAccent).mul(rift));
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(400, 32, 16), skyMat);
     this.sky.renderOrder = -10;
     this.sky.frustumCulled = false;
@@ -104,19 +109,30 @@ export class Arena {
     // --- Floor: worley flagstones with glowing rune seams ---
     this.floorMat = new THREE.MeshStandardNodeMaterial({ roughness: 0.82, metalness: 0.05 });
     const p = positionWorld.xz;
-    const cellN = mx_worley_noise_float(p.mul(0.32));
-    const edge = smoothstep(0.02, 0.09, cellN);
-    const grain = mx_fractal_noise_float(vec3(p.mul(1.7), 0), 3, 2, 0.5).mul(0.5).add(0.5);
-    const tint = mx_noise_float(vec3(p.mul(0.06), 1)).mul(0.5).add(0.5);
-    const stone = mix(vec3(this.uStoneDark), vec3(this.uStone), grain.mul(0.6).add(tint.mul(0.4)));
-    this.floorMat.colorNode = stone.mul(mix(float(0.35), float(1), edge));
-    // rune glow in seams, pulsing outward in rings
+    // flagstones: F2-F1 worley distance = distance to the cell border
+    const wv = mx_worley_noise_vec2(p.mul(0.26));
+    const border = wv.y.sub(wv.x);
+    const seam = float(1).sub(smoothstep(0.015, 0.075, border));
+    const bevel = smoothstep(0.0, 0.35, border);
+    // per-stone tint from the F1 distance pattern + low-frequency drift
+    const cellTint = mx_noise_float(vec3(p.mul(0.11), 3.7)).mul(0.5).add(0.5);
+    const grain = mx_fractal_noise_float(vec3(p.mul(2.1), 0), 3, 2, 0.5).mul(0.5).add(0.5);
+    const moss = smoothstep(0.62, 0.8, mx_noise_float(vec3(p.mul(0.09), 11)).mul(0.5).add(0.5));
+    let stone: any = mix(vec3(this.uStoneDark), vec3(this.uStone), grain.mul(0.45).add(cellTint.mul(0.55)));
+    stone = mix(stone, stone.mul(vec3(0.75, 0.9, 0.8)), moss.mul(0.5));
+    this.floorMat.colorNode = stone.mul(mix(float(0.22), float(1), bevel.mul(0.7).add(0.3))).mul(float(1).sub(seam.mul(0.7)));
+    // inlaid arcane rings around the arena centre + glowing seams that pulse outward
     const r = p.length();
-    const wave = sin(r.mul(0.5).sub(time.mul(1.4))).mul(0.5).add(0.5);
-    const seam = float(1).sub(edge);
-    const runeMask = seam.mul(smoothstep(0.55, 1.0, mx_noise_float(vec3(p.mul(0.15), 7)).mul(0.5).add(0.5)).mul(1.4).add(0.12));
-    this.floorMat.emissiveNode = vec3(this.uAccent).mul(runeMask.mul(wave.mul(0.8).add(0.3)).mul(this.uPulse.mul(1.2).add(0.9)));
-    this.floorMat.roughnessNode = mix(float(0.95), float(0.55), seam);
+    const ang = atan(p.y, p.x);
+    const ringLines = smoothstep(0.09, 0.0, abs(r.sub(7))).add(smoothstep(0.07, 0.0, abs(r.sub(7.8)))).add(smoothstep(0.12, 0.0, abs(r.sub(13.5))));
+    const ticks = step(0.86, fract(ang.mul(24 / 6.2831))).mul(step(7, r)).mul(step(r, 7.8));
+    const glyphs = smoothstep(0.06, 0.0, abs(sin(ang.mul(9).add(r.mul(0.6))).mul(0.35).sub(r.sub(10.2)))).mul(step(9.6, r)).mul(step(r, 10.8));
+    const inlay = clamp(ringLines.add(ticks).add(glyphs.mul(0.8)), 0, 1);
+    const wave = sin(r.mul(0.45).sub(time.mul(1.6))).mul(0.5).add(0.5);
+    const runeField = smoothstep(0.5, 0.95, mx_noise_float(vec3(p.mul(0.12), 7)).mul(0.5).add(0.5));
+    const seamGlow = seam.mul(runeField.mul(1.6).add(0.06)).mul(wave.mul(0.9).add(0.25));
+    this.floorMat.emissiveNode = vec3(this.uAccent).mul(seamGlow.add(inlay.mul(wave.mul(0.6).add(0.55)).mul(1.3))).mul(this.uPulse.mul(1.1).add(0.8));
+    this.floorMat.roughnessNode = mix(float(0.92), float(0.5), seam.add(inlay).clamp(0, 1));
 
     // --- Undersides & pillars: rocky, with faint veins ---
     this.rockMat = new THREE.MeshStandardNodeMaterial({ roughness: 0.95, metalness: 0 });
@@ -146,9 +162,10 @@ export class Arena {
     this.uSkyHorizon.value.set(th.skyHorizon);
     this.uSkyLow.value.set(th.skyLow);
     (this.scene.fog as THREE.FogExp2).color.set(th.fog);
-    this.hemi.color.set(th.sun).lerp(col(th.accent), 0.25);
+    this.hemi.color.set(th.sun).lerp(col(th.accent), 0.15);
     this.hemi.groundColor.set(th.stoneDark);
     this.sun.color.set(th.sun);
+    this.rim.color.set(th.accent);
 
     const rng = new Rng(room.seed ^ 0xabc);
     for (const p of room.platforms) this.group.add(this.buildPlatform(p.x, p.z, p.r, p.top, p.seed));

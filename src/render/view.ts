@@ -69,7 +69,7 @@ export class GameView {
       shake: (a) => rig.shake(a),
       flash: (c, a) => {
         gfx.u.flash.value.set(c);
-        gfx.u.flashAmt.value = Math.max(gfx.u.flashAmt.value, a);
+        gfx.u.flashAmt.value = Math.max(gfx.u.flashAmt.value, a * 0.45);
       },
       hitstop: (ms) => this.hitstop(ms),
       aberration: (a) => (gfx.u.ca.value = Math.max(gfx.u.ca.value, a)),

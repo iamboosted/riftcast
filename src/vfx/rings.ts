@@ -75,11 +75,11 @@ export class Shockwaves {
     const dm = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.FrontSide, fog: false });
     const dd = instancedBufferAttribute(this.domeData);
     const dc = instancedBufferAttribute(this.domeCol);
-    const fres = pow(float(1).sub(abs(dot(normalView, positionViewDirection))), 2.2);
+    const fres = pow(float(1).sub(abs(dot(normalView, positionViewDirection))), 3.5);
     const dn = mx_noise_float(positionLocal.mul(3).add(vec3(0, time.mul(2), dd.w))).mul(0.5).add(0.5);
     const dfade = pow(float(1).sub(dd.x), 2);
     const above = smoothstep(-0.2, 0.1, positionLocal.y);
-    const da = clamp(fres.mul(dn.mul(0.8).add(0.5)).mul(dfade).mul(dd.z).mul(above), 0, 4);
+    const da = clamp(fres.mul(dn.mul(0.8).add(0.4)).mul(dfade).mul(dd.z).mul(above), 0, 2);
     dm.colorNode = vec4(dc.mul(da), da);
     this.domeMesh = new THREE.InstancedMesh(dg, dm, max / 2);
     this.domeMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -97,7 +97,7 @@ export class Shockwaves {
 
   dome(x: number, y: number, z: number, radius: number, color: number, o: { life?: number; intensity?: number } = {}): void {
     if (this.domes.length >= this.max / 2) this.domes.shift();
-    this.domes.push({ x, y, z, r0: radius * 0.2, r1: radius, t: 0, life: o.life ?? 0.45, color: new THREE.Color(color), intensity: o.intensity ?? 2, thick: 0, tilt: 0 });
+    this.domes.push({ x, y, z, r0: radius * 0.2, r1: radius, t: 0, life: o.life ?? 0.45, color: new THREE.Color(color), intensity: o.intensity ?? 1.4, thick: 0, tilt: 0 });
   }
 
   update(dt: number): void {
