@@ -9,6 +9,7 @@ import { ENEMIES } from '../data/enemies';
 import { QUALITY_ORDER, QUALITY } from '../core/quality';
 import { ROOM_SEQUENCE } from '../sim/room';
 import { AFFIX_INFO } from '../sim/affixes';
+import { COMBO_RULES } from '../sim/comboTable';
 
 export interface UiActions {
   playSolo(): void;
@@ -113,6 +114,10 @@ export class Ui {
         break;
       case 'unlocks':
         this.show('unlocks');
+        break;
+      case 'codex':
+        this.backTo = this.current === 'pause' ? 'pause' : 'title';
+        this.show('codex');
         break;
       case 'settings':
         this.show('settings');
@@ -221,6 +226,7 @@ export class Ui {
               <button class="btn sm" data-a="loadout">Gauntlets</button>
               <button class="btn sm" data-a="unlocks">Unlocks <em>${m.shards}◈</em></button>
               <button class="btn sm" data-a="settings">Settings</button>
+              <button class="btn sm" data-a="codex">Codex</button>
             </div>
             <div class="row">
               <a class="btn sm ghost" href="./vfx-gallery/">VFX Gallery</a>
@@ -275,7 +281,7 @@ export class Ui {
           <h4>Controls</h4><div class="row wrap"><button class="btn sm" data-a="set" data-v="sensitivity:-0.1">Mouse/Pad −</button><span class="val">${s.sensitivity.toFixed(1)}</span><button class="btn sm" data-a="set" data-v="sensitivity:0.1">+</button>
           <button class="btn sm" data-a="set" data-v="touchLook:-0.1">Touch aim −</button><span class="val">${s.touchLook.toFixed(1)}</span><button class="btn sm" data-a="set" data-v="touchLook:0.1">+</button></div>
           <div class="row wrap">${tog('invertY', 'Invert Y', s.invertY)}${tog('aimAssist', 'Aim assist', s.aimAssist)}${tog('perf', 'Perf overlay', s.perf)}${tog('reduceFlashes', 'Reduce flashes', s.reduceFlashes)}<button class="btn sm" data-a="fs">Fullscreen</button></div>
-          <div class="row">${n === 'pause' ? '<button class="btn primary" data-a="resume">Resume</button><button class="btn danger" data-a="leave">Leave Run</button>' : '<button class="btn" data-a="title">Back</button>'}</div>
+          <div class="row">${n === 'pause' ? '<button class="btn primary" data-a="resume">Resume</button><button class="btn" data-a="codex">Codex</button><button class="btn danger" data-a="leave">Leave Run</button>' : '<button class="btn" data-a="title">Back</button>'}</div>
           ${n === 'pause' ? '<p class="hint">Desktop: WASD move · Mouse aim · LMB cast · RMB charge · Q signature · Shift dash · Space jump/hover · R swap · G ping (H help, C combo) · M mute · F3 perf</p>' : ''}
           </div>`;
         break;
@@ -283,6 +289,20 @@ export class Ui {
       case 'hud':
         this.screen.innerHTML = `<button class="pausebtn" data-a="pause" aria-label="Pause">❚❚</button>`;
         break;
+      case 'codex': {
+        const rules = COMBO_RULES.filter((r) => r.desc);
+        const icon = (r: (typeof rules)[number]) => {
+          const els = [r.a.element, r.b.element, r.effect.element].flat().filter((e): e is string => typeof e === 'string' && e in ELEMENT_INFO) as Element[];
+          return [...new Set(els)].map((e) => `<span style="color:${ELEMENT_INFO[e].css}">${ELEMENT_INFO[e].glyph}</span>`).join('');
+        };
+        this.screen.innerHTML = `<div class="panel wide"><h2>Combo Codex</h2>
+          <p>Elements react through the world, no matter who cast them. Every mage involved gets the credit.</p>
+          <div class="codex">${rules.map((r) => `<div class="cx ${r.silent ? 'silent' : ''}"><b>${icon(r)} ${esc(r.name || 'Interaction')}</b><span>${esc(r.desc!)}</span></div>`).join('')}</div>
+          <h4>Statuses</h4><p>Burn (DoT) · Chill → Frozen at full · Shock (micro-stun) · Wet (+40% Storm) · Poison (stacking DoT) · Blind (wanders, can't attack) · Stagger (interrupts wind-ups)</p>
+          <h4>Elite affixes</h4><p>${Object.values(AFFIX_INFO).map((a) => `<b>${a.name}</b>: ${a.desc}`).join(' · ')}</p>
+          <div class="row"><button class="btn" data-a="back">Back</button></div></div>`;
+        break;
+      }
       case 'reward':
       case 'lobby':
       case 'end':

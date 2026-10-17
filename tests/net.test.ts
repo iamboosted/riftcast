@@ -281,6 +281,25 @@ describe('multiplayer over lossy loopback', () => {
     expect(firstPred).toBeGreaterThanOrEqual(0);
   });
 
+  it('clients predict charge + heavy release without doubling the host cast', () => {
+    const r = setup(1, { latencyMs: 70, jitterMs: 5, loss: 0 });
+    r.host.startRun();
+    r.step(5);
+    const i = emptyInput();
+    i.az = -15;
+    i.buttons = BTN_HEAVY;
+    r.inputs.set('C1', i);
+    r.step(3);
+    // charge glow is visible locally before any snapshot could confirm it
+    expect(r.clients[0].state.players.get('C1')!.charging).toBe(true);
+    r.step(20);
+    r.inputs.set('C1', emptyInput());
+    r.step(30);
+    const heavies = r.clientEvents[0].filter((e) => e.t === 'cast' && e.pid === 'C1' && e.slot === 'heavy');
+    expect(heavies.length).toBe(1);
+    expect(r.hostEvents.filter((e) => e.t === 'cast' && e.pid === 'C1' && e.slot === 'heavy').length).toBe(1);
+  });
+
   it('host leaving notifies clients', () => {
     const r = setup(1, { latencyMs: 20, jitterMs: 0, loss: 0 });
     const msgs: string[] = [];

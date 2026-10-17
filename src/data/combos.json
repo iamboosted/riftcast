@@ -18,7 +18,8 @@
       },
       "effect": {
         "type": "reflect"
-      }
+      },
+      "desc": "Gale projectiles bounce off stone walls with +25% damage."
     },
     {
       "id": "magma_wall",
@@ -40,7 +41,8 @@
         "element": "fire",
         "dps": 30,
         "consume": true
-      }
+      },
+      "desc": "Hit a Bulwark wall with Fire: it becomes a burning Magma Wall that erupts when it fades."
     },
     {
       "id": "wall_block",
@@ -57,7 +59,8 @@
       },
       "effect": {
         "type": "block"
-      }
+      },
+      "desc": "Stone walls block projectiles (arcing shots sail over)."
     },
     {
       "id": "detonation",
@@ -85,7 +88,8 @@
         "radiusMul": 1.5,
         "minRadius": 4,
         "consume": true
-      }
+      },
+      "desc": "Fire touching a Venom cloud or pool detonates it \u2014 and can chain through nearby clouds."
     },
     {
       "id": "firestorm",
@@ -113,7 +117,8 @@
         "dps": 38,
         "radiusMul": 1.35,
         "lifeAdd": 3
-      }
+      },
+      "desc": "Cast Cyclone (Gale heavy), then hit it with Fire: a roaming firestorm that hunts enemies."
     },
     {
       "id": "toxic_tempest",
@@ -138,7 +143,8 @@
         "radiusMul": 1.5,
         "lifeAdd": 4,
         "growth": 0.9
-      }
+      },
+      "desc": "Cyclone + Venom: a spreading toxic storm that grows as it roams."
     },
     {
       "id": "blizzard",
@@ -162,7 +168,8 @@
         "dps": 16,
         "radiusMul": 1.4,
         "lifeAdd": 3
-      }
+      },
+      "desc": "Cyclone + Frost: a freezing blizzard that chills everything it drags in."
     },
     {
       "id": "thunderhead",
@@ -185,7 +192,8 @@
         "dps": 10,
         "radiusMul": 1.3,
         "lifeAdd": 3
-      }
+      },
+      "desc": "Cyclone + Storm: a roaming storm cell that zaps the nearest foes."
     },
     {
       "id": "chain_electrocution",
@@ -214,7 +222,8 @@
         "element": "storm",
         "damage": 55,
         "duration": 3.5
-      }
+      },
+      "desc": "Storm into water or frost patches electrifies the whole connected puddle network."
     },
     {
       "id": "steam",
@@ -249,7 +258,8 @@
         "life": 6,
         "consume": true,
         "damage": 25
-      }
+      },
+      "desc": "Fire on frost patches or puddles bursts into blinding steam (and soaks enemies)."
     },
     {
       "id": "steam_status",
@@ -273,7 +283,8 @@
         "life": 5,
         "consume": true,
         "damage": 30
-      }
+      },
+      "desc": "Fire on a frozen enemy flashes into steam."
     },
     {
       "id": "shatter",
@@ -296,7 +307,8 @@
         "damage": 60,
         "radius": 4,
         "consume": true
-      }
+      },
+      "desc": "Stone on a frozen enemy shatters it for triple damage plus shrapnel."
     },
     {
       "id": "flash_freeze",
@@ -320,7 +332,8 @@
         "freeze": true,
         "radiusMul": 1.2,
         "lifeAdd": 3
-      }
+      },
+      "desc": "Frost into a puddle freezes it solid \u2014 and everyone standing in it."
     },
     {
       "id": "conduction",
@@ -342,7 +355,8 @@
         "damage": 40,
         "radius": 9,
         "jumps": 5
-      }
+      },
+      "desc": "Storm on a wet enemy chains lightning to every wet foe nearby."
     }
   ]
 }

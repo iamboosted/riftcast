@@ -42,6 +42,7 @@ export interface ComboRule {
   id: string;
   name: string;
   silent?: boolean;
+  desc?: string;
   a: Pattern;
   b: Pattern;
   effect: ComboEffect;

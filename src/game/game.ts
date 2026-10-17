@@ -167,6 +167,9 @@ export class Game {
       this.ui.banner(kind === 'boss' ? 'Boss Chamber' : kind === 'elite' ? 'Elite Chamber' : `Chamber ${idx + 1}`, kind === 'combat' ? 'Clear the rift-spawn' : kind === 'elite' ? 'Something larger stirs' : 'Face the warden of the rift');
       if (this.ui.current === 'reward') this.ui.show('hud');
       this.audio.room(kind);
+      // a loadout-aware tip a moment after the banner
+      const me = this.session?.state.players.get(this.session.localId);
+      if (me && idx < 4) setTimeout(() => this.mode === 'play' && this.ui.current === 'hud' && this.ui.toast(pickTip(me.gauntlets, idx)), 2800);
       // rift travel: white-out flash + FOV punch into the new chamber
       this.gfx.u.flash.value.set(0xe8deff);
       this.gfx.u.flashAmt.value = 1.2;
@@ -609,3 +612,22 @@ export class Game {
 }
 
 export type { Element };
+
+const TIPS: { need: Element[]; text: string }[] = [
+  { need: ['gale', 'fire'], text: 'Tip: charge Cyclone, then shoot Fire into it → FIRESTORM' },
+  { need: ['gale', 'venom'], text: 'Tip: Cyclone + Venom → a spreading TOXIC TEMPEST' },
+  { need: ['frost', 'stone'], text: 'Tip: freeze a foe with Frost, then hit it with Stone → SHATTER' },
+  { need: ['fire', 'venom'], text: 'Tip: throw a Plague Flask, then ignite the cloud → DETONATION' },
+  { need: ['storm', 'frost'], text: 'Tip: frost patches melt into puddles — Storm electrifies the whole network' },
+  { need: ['fire', 'frost'], text: 'Tip: Fire on frost makes blinding STEAM' },
+  { need: ['stone', 'gale'], text: 'Tip: Razor Gusts ricochet off your Bulwark walls' },
+  { need: ['stone', 'fire'], text: 'Tip: set your Bulwark alight → MAGMA WALL' },
+  { need: ['gale'], text: 'Tip: knock walkers off the island edge with Gale for an instant kill' },
+  { need: [], text: 'Tip: combos work with your teammates’ spells too — check the Codex' },
+  { need: [], text: 'Tip: jump over ring and line telegraphs; dash through anything' },
+  { need: [], text: 'Tip: standing next to a downed ally revives them' },
+];
+function pickTip(g: [Element, Element], idx: number): string {
+  const ok = TIPS.filter((t) => t.need.every((e) => g.includes(e)));
+  return ok[idx % ok.length].text;
+}
