@@ -424,8 +424,8 @@ export class Fx {
         this.scorchMark('fire', x, gy, z, r * 0.7);
         break;
       case 'frost':
-        this.e('add', { x, y: gy + 0.3, z, count: 140, spread: 2, posSpread: r, mode: 3, life: 1.2, lifeVar: 0.4, size: 0.5, sizeEnd: 0.0, color: c.core, colorEnd: c.main, intensity: 3.5, gravity: -2, turb: 1.5, shape: SHAPE.shard, spin: 2 });
-        this.e('add', { x, y: gy + 4, z, count: 120, spread: 1.5, posSpread: r, mode: 3, vy: -3, life: 1.6, size: 0.18, color: 0xffffff, colorEnd: c.main, intensity: 3, gravity: 2, turb: 2, shape: SHAPE.flake, spin: 2, floorY: gy });
+        this.e('add', { x, y: gy + 0.3, z, count: 120, spread: 2, posSpread: r, mode: 3, life: 1.2, lifeVar: 0.4, size: 0.45, sizeEnd: 0.0, color: c.core, colorEnd: c.main, intensity: 2.2, gravity: -2, turb: 1.5, shape: SHAPE.shard, spin: 2 });
+        this.e('add', { x, y: gy + 4, z, count: 110, spread: 1.5, posSpread: r, mode: 3, vy: -3, life: 1.6, size: 0.16, color: 0xffffff, colorEnd: c.main, intensity: 1.8, gravity: 2, turb: 2, shape: SHAPE.flake, spin: 2, floorY: gy });
         this.e('add', { x, y: gy + 1, z, count: 1, life: 0.22, size: r * 2.6, sizeEnd: r, color: c.core, colorEnd: c.main, intensity: 1.3, shape: SHAPE.glow });
         this.juice.flash(0x9fe8ff, 0.15);
         break;

@@ -73,7 +73,7 @@ export class Gfx {
     const b = tex.sample(uvc.sub(caOff)).b;
     let col: any = vec3(r, g, b);
     if (q.bloom) {
-      this.bloomNode = bloom(tex, q.bloomStrength, 0.55, 0.62);
+      this.bloomNode = bloom(tex, q.bloomStrength, 0.55, 0.7);
       this.bloomNode.setResolutionScale?.(q.name === 'low' ? 0.3 : q.name === 'medium' ? 0.4 : 0.5);
       this.bloomNode.strength = this.u.bloomStrength as any;
       this.u.bloomStrength.value = q.bloomStrength;
