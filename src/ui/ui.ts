@@ -274,7 +274,7 @@ export class Ui {
           <h4>Audio</h4><div class="row wrap">${tog('muted', 'Mute', s.muted)}<button class="btn sm" data-a="set" data-v="volume:-0.1">Vol −</button><span class="val">${Math.round(s.volume * 100)}%</span><button class="btn sm" data-a="set" data-v="volume:0.1">Vol +</button></div>
           <h4>Controls</h4><div class="row wrap"><button class="btn sm" data-a="set" data-v="sensitivity:-0.1">Mouse/Pad −</button><span class="val">${s.sensitivity.toFixed(1)}</span><button class="btn sm" data-a="set" data-v="sensitivity:0.1">+</button>
           <button class="btn sm" data-a="set" data-v="touchLook:-0.1">Touch aim −</button><span class="val">${s.touchLook.toFixed(1)}</span><button class="btn sm" data-a="set" data-v="touchLook:0.1">+</button></div>
-          <div class="row wrap">${tog('invertY', 'Invert Y', s.invertY)}${tog('aimAssist', 'Aim assist', s.aimAssist)}${tog('perf', 'Perf overlay', s.perf)}<button class="btn sm" data-a="fs">Fullscreen</button></div>
+          <div class="row wrap">${tog('invertY', 'Invert Y', s.invertY)}${tog('aimAssist', 'Aim assist', s.aimAssist)}${tog('perf', 'Perf overlay', s.perf)}${tog('reduceFlashes', 'Reduce flashes', s.reduceFlashes)}<button class="btn sm" data-a="fs">Fullscreen</button></div>
           <div class="row">${n === 'pause' ? '<button class="btn primary" data-a="resume">Resume</button><button class="btn danger" data-a="leave">Leave Run</button>' : '<button class="btn" data-a="title">Back</button>'}</div>
           ${n === 'pause' ? '<p class="hint">Desktop: WASD move · Mouse aim · LMB cast · RMB charge · Q signature · Shift dash · Space jump/hover · R swap · G ping (H help, C combo) · M mute · F3 perf</p>' : ''}
           </div>`;

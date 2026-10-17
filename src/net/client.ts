@@ -54,6 +54,9 @@ export class ClientSession implements Session {
   /** client-side predicted primary shots (cosmetic) awaiting the host's authoritative copy */
   private predicted: { id: number; spell: string; t: number }[] = [];
   private predCast: number[] = [];
+  private predHeavy: number[] = [];
+  private predCharge = 0;
+  private predCharging = false;
   private idMap = new Map<number, number>();
   private predId = -1;
   private predCd = 0;
@@ -130,6 +133,10 @@ export class ClientSession implements Session {
       this.predCast.shift();
       return null;
     }
+    if (e.t === 'cast' && e.pid === this.localId && e.slot === 'heavy' && this.predHeavy.length) {
+      this.predHeavy.shift();
+      return null;
+    }
     if (e.t === 'proj' && e.ck.startsWith(`${this.localId}:`)) {
       const i = this.predicted.findIndex((q) => q.spell === e.sp);
       if (i >= 0) {
@@ -144,6 +151,27 @@ export class ClientSession implements Session {
       return { ...e, id };
     }
     return e;
+  }
+
+  /** Charge glow + heavy release flash shown immediately from local input (host stays authoritative). */
+  private predictCharge(me: Player, inp: PlayerInput): void {
+    const held = (inp.buttons & BTN_HEAVY) !== 0;
+    const phaseOk = this.state.run.phase === 'room' || this.state.run.phase === 'cleared';
+    const el = me.gauntlets[me.active];
+    if (held && phaseOk && me.state === 'alive' && me.cd[me.active].heavy <= 0.05) {
+      this.predCharging = true;
+      this.predCharge = Math.min(1, this.predCharge + (SIM_DT / SPELL_TIMING[el].chargeTime) * me.stats.chargeSpeed);
+    } else if (this.predCharging) {
+      if (this.predCharge >= 0.12) {
+        const o = { x: me.pos.x + Math.cos(me.yaw) * 0.42 - Math.sin(me.yaw) * 0.4, y: me.pos.y + 1.35, z: me.pos.z - Math.sin(me.yaw) * 0.42 - Math.cos(me.yaw) * 0.4 };
+        const d = { x: -Math.sin(inp.yaw), y: Math.sin(inp.pitch), z: -Math.cos(inp.yaw) };
+        this.events.push({ t: 'cast', pid: this.localId, el, slot: 'heavy', x: o.x, y: o.y, z: o.z, dx: d.x, dy: d.y, dz: d.z, c: this.predCharge });
+        this.predHeavy.push(this.clock);
+      }
+      this.predCharging = false;
+      this.predCharge = 0;
+    }
+    while (this.predHeavy.length && this.clock - this.predHeavy[0] > 1) this.predHeavy.shift();
   }
 
   private predictCast(me: Player, inp: PlayerInput): void {
@@ -215,7 +243,11 @@ export class ClientSession implements Session {
         p.ready = m.ready;
       }
       p.stats = aggregateBoons([...p.boons, ...s.tb]);
-      if (local) this.reconcile(p, s.ack[this.localId] ?? 0, keepPos);
+      if (local) {
+        this.reconcile(p, s.ack[this.localId] ?? 0, keepPos);
+        p.charging = this.predCharging;
+        p.charge = this.predCharge;
+      }
       else this.pushSample(`p:${id}`, t, p.pos, p.yaw);
     }
     for (const id of [...st.players.keys()]) if (!seen.has(id)) st.players.delete(id);
@@ -300,7 +332,12 @@ export class ClientSession implements Session {
         me.dashCharges = this.pred.dashCharges;
       }
       this.clock += SIM_DT;
-      if (me) this.predictCast(me, inp);
+      if (me) {
+        this.predictCast(me, inp);
+        this.predictCharge(me, inp);
+        me.charging = this.predCharging;
+        me.charge = this.predCharge;
+      }
       // advance client-side timers between snapshots for smooth telegraphs/zones
       for (const tg of this.state.telegraphs) tg.t = Math.min(tg.dur, tg.t + SIM_DT);
       for (const z of this.state.zones) z.life = Math.max(0, z.life - SIM_DT);

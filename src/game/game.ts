@@ -486,8 +486,13 @@ export class Game {
 
     this.view.update(fxDt, this.gfx.camera);
 
-    // post uniforms decay
+    // post uniforms decay (and photosensitivity damping)
     const u = this.gfx.u;
+    if (this.meta.settings.reduceFlashes) {
+      u.flashAmt.value = Math.min(u.flashAmt.value, 0.12);
+      u.ca.value = Math.min(u.ca.value, 0.15);
+      this.rig.trauma = Math.min(this.rig.trauma, 0.35);
+    }
     u.flashAmt.value *= Math.exp(-rawDt * 9);
     u.ca.value *= Math.exp(-rawDt * 5);
     u.hurt.value *= Math.exp(-rawDt * 2.5);

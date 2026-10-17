@@ -21,6 +21,7 @@ export interface SettingsState {
   invertY: boolean;
   aimAssist: boolean;
   perf: boolean;
+  reduceFlashes: boolean;
 }
 
 export const GAUNTLET_COST = 30;
@@ -44,6 +45,7 @@ export const defaultSettings = (): SettingsState => ({
   invertY: false,
   aimAssist: true,
   perf: false,
+  reduceFlashes: false,
 });
 
 export class Meta {
