@@ -1,0 +1,27 @@
+{
+  "name": "riftcast",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prebuild": "node scripts/gen-icons.mjs",
+    "predev": "node scripts/gen-icons.mjs"
+  },
+  "dependencies": {
+    "three": "^0.186.1",
+    "trystero": "^0.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/three": "^0.186.0",
+    "typescript": "5.9",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  }
+}
