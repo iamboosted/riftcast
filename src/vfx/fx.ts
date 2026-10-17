@@ -8,6 +8,8 @@ import { generateLightning, type Bolt } from './lightning';
 import { Shockwaves } from './rings';
 import { DecalLayer, scorchShader, frostShader, oozeShader, waterShader, electricShader, runeShader, teleRadialShader, teleLineShader } from './decals';
 import { Distortion } from './distort';
+import { LightPool } from './lights';
+import { Spikes } from './spikes';
 import type { QualityPreset } from '../core/quality';
 import type { Element, Telegraph, Zone } from '../sim/types';
 import { ELEMENT_INFO } from '../data/elements';
@@ -41,6 +43,8 @@ interface ProjVis {
   emitT: number;
   age: number;
   life: number;
+  sx: number;
+  sz: number;
 }
 
 interface BoltVis {
@@ -122,6 +126,10 @@ export class Fx {
   rings = new Shockwaves();
   cores = new Cores();
   distort: Distortion | null = null;
+  lights: LightPool;
+  ice = new Spikes('ice');
+  rock = new Spikes('rock');
+  private seenZones = new Set<number>();
   decals: Record<'scorch' | 'frost' | 'ooze' | 'water' | 'electric' | 'rune' | 'teleR' | 'teleL', DecalLayer>;
   trails: Trail[] = [];
   projs = new Map<number, ProjVis>();
@@ -150,6 +158,8 @@ export class Fx {
     };
     for (const d of Object.values(this.decals)) this.group.add(d.mesh);
     this.group.add(this.blend.mesh, this.add.mesh, this.strips.mesh, this.rings.group, this.cores.mesh);
+    this.lights = new LightPool(q.name === 'low' ? 2 : q.name === 'medium' ? 4 : 6);
+    this.group.add(this.lights.group, this.ice.mesh, this.rock.mesh);
     if (q.distortion) {
       this.distort = new Distortion();
       this.group.add(this.distort.mesh);
@@ -253,7 +263,12 @@ export class Fx {
         this.trails.push(trail2);
       }
     }
-    this.projs.set(id, { id, el, spell, x, y, z, vx, vy, vz, g, r, enemy, trail, trail2, emitT: 0, age: 0, life: life + 0.3 });
+    const pv: ProjVis = { id, el, spell, x, y, z, vx, vy, vz, g, r, enemy, trail, trail2, emitT: 0, age: 0, life: life + 0.3, sx: x, sz: z };
+    this.projs.set(id, pv);
+    if (spell === 'sunorb' || spell === 'spear' || spell === 'lance' || spell === 'flask') {
+      const tmp = new THREE.Vector3();
+      this.lights.flash(x, y, z, c.main, spell === 'sunorb' ? 30 + r * 30 : 14, 9, 99, () => (this.projs.has(id) ? tmp.set(pv.x, pv.y, pv.z) : null));
+    }
   }
 
   bounceProjectile(id: number, x: number, y: number, z: number, vx: number, vy: number, vz: number) {
@@ -277,6 +292,8 @@ export class Fx {
       if (Math.abs(gy - y) < 0.6) this.scorchMark(p.el, x, gy, z, 0.6);
     }
     if (p.enemy) this.rings.ring(x, y, z, 1.4, C(p.el).main, { life: 0.25 });
+    if (p.spell === 'lance') this.ice.line(p.sx, p.sz, x, z, this.ground(x, z, y + 1), 10, 1.6, 2.2);
+    if (p.spell === 'boulder') this.rock.burst(x, this.ground(x, z, y + 1), z, 1.6, 6, 0.9, 1.6);
   }
 
   private updateProjectiles(dt: number) {
@@ -366,6 +383,9 @@ export class Fx {
       this.juice.hitstop(55);
     } else this.juice.shake(0.2 * s);
     this.distort?.burst(x, y + 0.5, z, r * 2.6, 1.2, 0.5);
+    this.lights.flash(x, y + 1, z, c.main, big ? 90 : 35, r * 5, big ? 0.6 : 0.35);
+    if (el === 'frost') this.ice.burst(x, this.ground(x, z, y + 1), z, r * 0.7, Math.round(6 + r * 2), 1.4, 1.8);
+    if (el === 'stone') this.rock.burst(x, this.ground(x, z, y + 1), z, r * 0.6, Math.round(4 + r * 1.5), 1.2, 1.6);
     this.e('add', { x, y, z, count: 1, life: 0.2, size: r * 3.2, sizeEnd: r * 1.2, color: c.core, colorEnd: c.main, intensity: 3, shape: SHAPE.glow });
     if (el === 'fire') {
       this.e('add', { x, y, z, count: 40 * s, spread: 11 * s, mode: 2, life: 0.8, lifeVar: 0.4, size: 1.1 * s, sizeEnd: 0.2, color: c.core, colorEnd: c.dark, intensity: 5, intensityEnd: 1.2, gravity: -5, drag: 3, turb: 5, shape: SHAPE.flame, spin: 4 });
@@ -390,6 +410,8 @@ export class Fx {
     this.distort?.burst(x, gy + 1, z, r * 2.5, 1.0, 0.55);
     this.decals.rune.addTransient({ x, y: gy, z, sx: r * 0.8, sz: r * 0.8, rot: 0, d: [0, 0, 1.5, Math.random() * 10], color: new THREE.Color(c.main) }, 1.0);
     this.juice.shake(0.35);
+    this.lights.flash(x, gy + 1.5, z, c.main, 70, r * 3, 0.6);
+    if (el === 'frost') this.ice.burst(x, gy, z, r * 0.85, 34, 2.4, 3);
     switch (el) {
       case 'fire':
         this.e('add', { x, y: gy + 0.4, z, count: 160, spread: r * 2.4, mode: 1, life: 0.55, lifeVar: 0.25, size: 1.2, sizeEnd: 0.3, color: c.core, colorEnd: c.dark, intensity: 5, drag: 2.5, gravity: -6, turb: 3, shape: SHAPE.flame, spin: 4 });
@@ -427,6 +449,7 @@ export class Fx {
     this.scorchMark('storm', x, y, z, r * 0.7);
     this.juice.flash(0xd8c8ff, 0.18);
     this.juice.shake(0.4);
+    this.lights.flash(x, y + 3, z, 0xd8c8ff, 140, 22, 0.3);
   }
 
   /** Branching lightning between two points. */
@@ -519,6 +542,7 @@ export class Fx {
   /** Unique, screen-shaking set-piece per combo. */
   combo(key: string, x: number, y: number, z: number, r: number) {
     const gy = this.ground(x, z, y + 1);
+    this.lights.flash(x, gy + 2, z, key.includes('storm') || key === 'chain_electrocution' || key === 'conduction' || key === 'thunderhead' ? 0xc8b0ff : key.includes('steam') || key === 'shatter' || key === 'blizzard' || key === 'flash_freeze' ? 0xbff4ff : key === 'toxic_tempest' ? 0x9cff3a : 0xffa040, 160, r * 5, 0.8);
     this.juice.hitstop(90);
     this.juice.aberration(1);
     this.juice.shake(0.8);
@@ -577,12 +601,14 @@ export class Fx {
         this.rings.ring(x, gy, z, r * 1.3, c.main, { life: 0.4, intensity: 4 });
         this.rings.ring(x, y, z, r, 0xffffff, { life: 0.3, intensity: 3, tilt: Math.PI / 2 });
         this.scorchMark('frost', x, gy, z, r * 0.8);
+        this.ice.burst(x, gy, z, r * 0.6, 18, 1.8, 1.6);
         break;
       }
       case 'flash_freeze': {
         const c = C('frost');
         this.juice.flash(0xbff4ff, 0.3);
         this.e('add', { x, y: gy + 0.2, z, count: 120, spread: 1, posSpread: r, mode: 3, vy: 3, life: 1, size: 0.35, sizeEnd: 0, color: 0xffffff, colorEnd: c.main, intensity: 4, gravity: 3, shape: SHAPE.shard, spin: 3 });
+        this.ice.burst(x, gy, z, r * 0.9, 26, 1.6, 3.5);
         this.rings.ring(x, gy, z, r * 1.3, c.main, { life: 0.5, intensity: 4 });
         break;
       }
@@ -600,6 +626,21 @@ export class Fx {
 
   // ============================================================ zones (called every frame per zone)
   zone(z: Zone, dt: number) {
+    if (!this.seenZones.has(z.id)) {
+      this.seenZones.add(z.id);
+      if (this.seenZones.size > 600) this.seenZones = new Set([...this.seenZones].slice(-300));
+      const gy = z.pos.y;
+      if (z.tag === 'frostpatch') this.ice.burst(z.pos.x, gy, z.pos.z, z.radius * 0.8, Math.round(4 + z.radius * 3), 1.1, Math.min(4, z.life));
+      if (z.tag === 'wall') {
+        const dx = Math.cos(z.angle) * z.len,
+          dz = Math.sin(z.angle) * z.len;
+        this.rock.line(z.pos.x - dx, z.pos.z - dz, z.pos.x + dx, z.pos.z + dz, gy, 12, 1.6, 1.4);
+      }
+    }
+    if ((z.tag === 'firestorm' || z.tag === 'burning' || z.tag === 'magmawall' || z.tag === 'stormcell' || z.tag === 'electrified') && Math.random() < dt * (z.tag === 'burning' ? 3 : 8)) {
+      const col = z.tag === 'stormcell' || z.tag === 'electrified' ? 0xb48cff : 0xff7a2a;
+      this.lights.flash(z.pos.x, z.pos.y + 1.2, z.pos.z, col, z.tag === 'burning' ? 12 : 30, z.radius * 3, 0.25);
+    }
     const k = Math.min(1, dt * 60) * this.density;
     const el = z.element;
     const c = C(el);
@@ -811,6 +852,9 @@ export class Fx {
     this.add.update(dt);
     this.blend.update(dt);
     this.rings.update(dt);
+    this.lights.update(dt);
+    this.ice.update(dt);
+    this.rock.update(dt);
     for (const d of Object.values(this.decals)) d.update(dt);
     this.distort?.update(dt);
   }

@@ -22,8 +22,8 @@ export class CameraRig {
   private shakeT = 0;
   fovKick = 0;
   /** shoulder offset (right) */
-  shoulder = 0.95;
-  distance = 4.6;
+  shoulder = 1.15;
+  distance = 5.0;
   constructor(public camera: THREE.PerspectiveCamera) {}
 
   applyLook(dx: number, dy: number): void {

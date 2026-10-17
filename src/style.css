@@ -1125,3 +1125,73 @@ input.code {
 .tbtn-ping {
   opacity: 0.65;
 }
+
+/* ---------- pings ---------- */
+.pinglabel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  text-align: center;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(10, 6, 24, 0.7);
+  border: 1px solid var(--c);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent);
+  white-space: nowrap;
+}
+.pinglabel b {
+  display: block;
+  font-size: 13px;
+  color: var(--c);
+  letter-spacing: 0.08em;
+}
+.pinglabel small {
+  font-size: 10px;
+  color: var(--dim);
+}
+.pinglabel.k-help b {
+  color: #7dff8a;
+}
+.pinglabel.k-attack b {
+  color: #ff6a5a;
+}
+.pinglabel.k-combo b {
+  color: #ffd36a;
+}
+.pinglabel.off {
+  opacity: 0.7;
+}
+.ping-wheel .pw-opt {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(16, 10, 34, 0.9);
+  border: 1px solid #b48cff;
+  font-weight: 800;
+  font-size: 14px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ---------- compact HUD for touch: keep the bottom corners for thumbs ---------- */
+body.touch .hud-bottom {
+  top: calc(30px + var(--sat));
+  bottom: auto;
+  left: calc(60px + var(--sal));
+  transform: scale(0.8);
+  transform-origin: top left;
+}
+body.touch .team {
+  margin-top: 66px;
+}
+body.touch .hud-top {
+  left: calc(60px + var(--sal));
+}
+body.touch .crosshair {
+  transform: scale(1.2);
+}
+body.touch .toast {
+  bottom: auto;
+  top: calc(70px + var(--sat));
+}

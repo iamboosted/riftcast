@@ -88,7 +88,7 @@ function lumpy(geo: THREE.BufferGeometry, rng: Rng, amt: number): THREE.BufferGe
  */
 export function actorMaterial(accent: THREE.Color, opts: { crystal?: boolean } = {}): THREE.MeshStandardNodeMaterial {
   const m = new THREE.MeshStandardNodeMaterial({ roughness: opts.crystal ? 0.25 : 0.7, metalness: opts.crystal ? 0.2 : 0.05 });
-  const fx = uniform(new THREE.Vector4()).onObjectUpdate(({ object }) => (object.userData.fx as THREE.Vector4) ?? new THREE.Vector4());
+  const fx = uniform(new THREE.Vector4(0, 0, 0, 0)).onObjectUpdate(({ object }) => (object.userData.fx as THREE.Vector4) ?? new THREE.Vector4(0, 0, 0, 0));
   const glow = attribute('glow', 'float');
   const vc = attribute('color', 'vec3');
   const fres = pow(float(1).sub(abs(dot(normalView, positionViewDirection))), 2.5);
@@ -188,7 +188,7 @@ export function buildEnemy(shape: string, faction: string, seed: number, radius:
       for (const s of [-1, 1]) {
         const wg = new THREE.Mesh(new THREE.ConeGeometry(0.28, 1.1, 3).rotateZ(Math.PI / 2).translate(0.55 * s, 0, 0), sharedMat('glass-wing', accent, true));
         wg.userData.side = s;
-        (wg as any).userData.fx = new THREE.Vector4();
+        (wg as any).userData.fx = new THREE.Vector4(0, 0, 0, 0);
         wings.push(wg);
       }
       break;
@@ -202,7 +202,7 @@ export function buildEnemy(shape: string, faction: string, seed: number, radius:
         const sh = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), sharedMat('glass-wing', accent, true));
         sh.position.set(Math.cos(a) * 0.9, 0, Math.sin(a) * 0.9);
         sh.scale.set(1, 2, 1);
-        (sh as any).userData.fx = new THREE.Vector4();
+        (sh as any).userData.fx = new THREE.Vector4(0, 0, 0, 0);
         ring.add(sh);
       }
       spinners.push(ring);
@@ -219,7 +219,7 @@ export function buildEnemy(shape: string, faction: string, seed: number, radius:
         for (let k = 0; k < 2; k++) {
           const wg = new THREE.Mesh(new THREE.ConeGeometry(0.5 - k * 0.15, 2.2 - k * 0.6, 3).rotateZ(Math.PI / 2).translate(1.1 * s, k * -0.5, 0), sharedMat('glass-wing', accent, true));
           wg.userData.side = s;
-          (wg as any).userData.fx = new THREE.Vector4();
+          (wg as any).userData.fx = new THREE.Vector4(0, 0, 0, 0);
           wings.push(wg);
         }
       }
@@ -274,7 +274,7 @@ export function buildEnemy(shape: string, faction: string, seed: number, radius:
         const pm = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.4, 0.3), sharedMat('boss-obsidian', 0xff6a1a));
         pm.position.set(Math.cos(a) * 3.0, 3.2, Math.sin(a) * 3.0);
         pm.lookAt(0, 3.2, 0);
-        (pm as any).userData.fx = new THREE.Vector4();
+        (pm as any).userData.fx = new THREE.Vector4(0, 0, 0, 0);
         plates.add(pm);
       }
       spinners.push(plates);
@@ -290,7 +290,7 @@ export function buildEnemy(shape: string, faction: string, seed: number, radius:
       for (let k = 0; k < 2; k++) {
         const ring = new THREE.Mesh(new THREE.TorusGeometry(2.6 + k * 0.7, 0.07, 6, 48), sharedMat('boss-prism', 0xa77bff, true));
         ring.rotation.x = Math.PI / 2 + (k ? 0.5 : -0.4);
-        (ring as any).userData.fx = new THREE.Vector4();
+        (ring as any).userData.fx = new THREE.Vector4(0, 0, 0, 0);
         const g = new THREE.Group();
         g.add(ring);
         spinners.push(g);
@@ -303,7 +303,7 @@ export function buildEnemy(shape: string, faction: string, seed: number, radius:
 
   const geo = b.build();
   const body = new THREE.Mesh(geo, sharedMat(`${faction}-${crystal ? 'c' : 'b'}`, accent, crystal));
-  body.userData.fx = new THREE.Vector4();
+  body.userData.fx = new THREE.Vector4(0, 0, 0, 0);
   // flyers are modelled around their centre
   const s = shape === 'shardling' || shape === 'weaver' || shape === 'queen' || shape === 'prism' ? 1 : 1;
   body.scale.setScalar(s);
@@ -340,7 +340,7 @@ export function buildMage(color: number, seed: number): ActorRig & { handL: THRE
   for (const s of [-1, 1]) b.add(new THREE.CylinderGeometry(0.07, 0.1, 0.55, 6), robe, 0, mat(s * 0.38, 1.12, -0.12, 0.9, 0, s * 0.2));
   const geo = b.build();
   const body = new THREE.Mesh(geo, sharedMat(`mage-${color}`, color));
-  body.userData.fx = new THREE.Vector4();
+  body.userData.fx = new THREE.Vector4(0, 0, 0, 0);
   const root = new THREE.Group();
   root.add(body);
   const handMat = (el: Element) => {

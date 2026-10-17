@@ -1,0 +1,14 @@
+[
+  {
+    "shot": "mobile",
+    "playing": true,
+    "stickRead": true,
+    "primaryHeld": true,
+    "moved": 28.74,
+    "aimTurned": 0.278,
+    "casts": 127,
+    "buttonsRendered": 0,
+    "errors": [],
+    "pass": false
+  }
+]

@@ -104,7 +104,11 @@ export class Ui {
         this.show('title');
         break;
       case 'loadout':
+        this.backTo = this.current === 'lobby' ? 'lobby' : 'title';
         this.show('loadout');
+        break;
+      case 'back':
+        this.show(this.backTo);
         break;
       case 'unlocks':
         this.show('unlocks');
@@ -186,6 +190,7 @@ export class Ui {
   }
 
   private screenArgs: unknown = null;
+  private backTo = 'title';
   show(name: string, args?: unknown) {
     this.current = name;
     this.screenArgs = args ?? null;
@@ -243,7 +248,7 @@ export class Ui {
               ${owned ? (eq >= 0 ? `<div class="badge">${eq === 0 ? 'PRIMARY' : 'SECOND'}</div>` : '') : `<div class="badge lock">LOCKED · ${GAUNTLET_COST}◈</div>`}
             </button>`;
           }).join('')}</div>
-          <div class="row"><button class="btn" data-a="title">Done</button></div></div>`;
+          <div class="row"><button class="btn" data-a="back">Done</button></div></div>`;
         break;
       case 'unlocks': {
         const lockedG = ELEMENTS.filter((e) => !m.gauntlets.includes(e));
@@ -449,6 +454,42 @@ export class Ui {
       d.el.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%,-50%) scale(${s})`;
       d.el.style.opacity = `${Math.min(1, (0.9 - d.t) * 3)}`;
     }
+  }
+
+  private pingEls: HTMLDivElement[] = [];
+  pings(list: { x: number; y: number; z: number; t: number; color: number; kind: string; name: string }[]) {
+    while (this.pingEls.length < list.length) {
+      const d = document.createElement('div');
+      d.className = 'pinglabel';
+      this.dmgLayer.appendChild(d);
+      this.pingEls.push(d);
+    }
+    const icon: Record<string, string> = { here: '◎ HERE', attack: '⚔ ATTACK', help: '✚ HELP', combo: '✸ COMBO!' };
+    const W = window.innerWidth,
+      H = window.innerHeight;
+    this.pingEls.forEach((el, i) => {
+      const m = list[i];
+      if (!m) {
+        el.style.display = 'none';
+        return;
+      }
+      const p = this.project(m.x, m.y + 3.2, m.z);
+      let x = p.x,
+        y = p.y;
+      const off = !p.visible || x < 20 || x > W - 20 || y < 20 || y > H - 20;
+      if (!p.visible) {
+        x = W - x;
+        y = H - 30;
+      }
+      x = Math.max(40, Math.min(W - 40, x));
+      y = Math.max(40, Math.min(H - 40, y));
+      el.style.display = 'block';
+      el.className = `pinglabel k-${m.kind}${off ? ' off' : ''}`;
+      el.style.setProperty('--c', hex(m.color));
+      el.innerHTML = `<b>${icon[m.kind] ?? '◎'}</b><small>${esc(m.name)}</small>`;
+      el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
+      el.style.opacity = `${Math.min(1, (5 - m.t) * 1.5)}`;
+    });
   }
 
   perf(text: string | null) {

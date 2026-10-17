@@ -76,10 +76,18 @@ export class TouchControls {
     this.setVisible(false);
   }
 
+  private probe: HTMLDivElement | null = null;
+  /** env(safe-area-inset-*) only resolves on real properties, so measure a hidden probe's padding. */
   safeArea() {
-    const cs = getComputedStyle(document.documentElement);
-    const v = (n: string) => parseFloat(cs.getPropertyValue(n)) || 0;
-    return { l: v('--sal'), r: v('--sar'), t: v('--sat'), b: v('--sab') };
+    if (!this.probe) {
+      const d = document.createElement('div');
+      d.style.cssText = 'position:fixed;inset:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+      document.body.appendChild(d);
+      this.probe = d;
+    }
+    const cs = getComputedStyle(this.probe);
+    const v = (x: string) => parseFloat(x) || 0;
+    return { l: v(cs.paddingLeft), r: v(cs.paddingRight), t: v(cs.paddingTop), b: v(cs.paddingBottom) };
   }
 
   relayout(): void {
@@ -168,7 +176,8 @@ export class TouchControls {
         this.c.swap++;
         break;
       case 'ping':
-        this.c.ping++;
+        this.pingStart = performance.now();
+        this.pingTimer = setTimeout(() => this.openPingWheel(), 350);
         break;
     }
     if (kind !== 'move' && kind !== 'aim') this.btnEls.get(kind)?.classList.add('on');
@@ -226,8 +235,67 @@ export class TouchControls {
       case 'jump':
         this.c.jumpHeld = false;
         break;
+      case 'ping': {
+        clearTimeout(this.pingTimer);
+        if (this.wheel) {
+          const pick = this.wheelPick(e.clientX, e.clientY);
+          this.closePingWheel();
+          if (pick) {
+            this.c.pingKind = pick;
+            this.c.ping++;
+          }
+        } else {
+          this.c.pingKind = null;
+          this.c.ping++;
+        }
+        break;
+      }
     }
     if (t.kind !== 'move' && t.kind !== 'aim') this.btnEls.get(t.kind)?.classList.remove('on');
+  }
+
+  private pingStart = 0;
+  private pingTimer: ReturnType<typeof setTimeout> | undefined;
+  private wheel: HTMLDivElement | null = null;
+  private static WHEEL: { k: 'here' | 'attack' | 'help' | 'combo'; label: string; dx: number; dy: number }[] = [
+    { k: 'here', label: '◎ Here', dx: -1, dy: 0 },
+    { k: 'attack', label: '⚔ Attack', dx: -0.7, dy: 0.75 },
+    { k: 'help', label: '✚ Help', dx: 0, dy: 1 },
+    { k: 'combo', label: '✸ Combo!', dx: -0.75, dy: -0.7 },
+  ];
+  private openPingWheel(): void {
+    const b = this.layout.buttons.find((q) => q.id === 'ping')!;
+    const w = document.createElement('div');
+    w.className = 'ping-wheel';
+    const R = 92 * this.layout.scale;
+    for (const o of TouchControls.WHEEL) {
+      const d = document.createElement('div');
+      d.className = 'pw-opt';
+      d.textContent = o.label;
+      d.style.left = `${b.x + o.dx * R}px`;
+      d.style.top = `${b.y + o.dy * R}px`;
+      d.dataset.k = o.k;
+      w.appendChild(d);
+    }
+    this.root.appendChild(w);
+    this.wheel = w;
+  }
+  private wheelPick(x: number, y: number): 'here' | 'attack' | 'help' | 'combo' | null {
+    if (!this.wheel) return null;
+    let best: 'here' | 'attack' | 'help' | 'combo' | null = null;
+    let bd = 80 * this.layout.scale;
+    for (const el of Array.from(this.wheel.children) as HTMLElement[]) {
+      const d = Math.hypot(parseFloat(el.style.left) - x, parseFloat(el.style.top) - y);
+      if (d < bd) {
+        bd = d;
+        best = el.dataset.k as 'here' | 'attack' | 'help' | 'combo';
+      }
+    }
+    return best;
+  }
+  private closePingWheel(): void {
+    this.wheel?.remove();
+    this.wheel = null;
   }
 
   update(dt: number): void {

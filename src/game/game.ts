@@ -246,6 +246,7 @@ export class Game {
     this.bossName = '';
     this.ui.show('hud');
     this.touch.setVisible(this.touchMode);
+    document.body.classList.toggle('touch', this.touchMode);
     if (!this.touchMode) this.kbm.requestLock();
     this.rig.yaw = 0;
     this.rig.pitch = -0.12;
@@ -334,7 +335,7 @@ export class Game {
     const p = this.session.state.players.get(this.session.localId);
     if (!p) return;
     const a = this.rig.aim(this.session.state.room, [], 0, new THREE.Vector3(p.pos.x, p.pos.y, p.pos.z));
-    const k: PingKind = this.aimTarget >= 0 ? 'attack' : kind;
+    const k: PingKind = kind === 'here' && this.aimTarget >= 0 ? 'attack' : kind;
     this.session.ping(k, a.x, a.y, a.z);
   }
 
@@ -429,7 +430,7 @@ export class Game {
       input.swap = c.swap & 255;
       if (c.ping !== this.prevPing) {
         this.prevPing = c.ping;
-        this.doPing('here');
+        this.doPing(c.pingKind ?? 'here');
       }
     } else if (this.mode === 'menu' && session === this.demo) {
       this.driveDemo(input, rawDt, this.demo, 'demo', true);
@@ -495,6 +496,7 @@ export class Game {
       if (s.run.phase !== 'lobby') this.enterPlay();
     }
     this.ui.frame(rawDt);
+    this.ui.pings(isPlay ? this.view.pingMarkers.map((m) => ({ ...m, name: s.players.get(m.pid)?.name ?? '' })) : []);
     this.audio.update(rawDt, s, this.mode === 'play');
 
     this.gfx.render();

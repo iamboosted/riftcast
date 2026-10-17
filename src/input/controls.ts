@@ -16,6 +16,8 @@ export interface ControlState {
   jump: number;
   swap: number;
   ping: number;
+  /** kind for the latest ping press; null = contextual (here/attack) */
+  pingKind: 'here' | 'attack' | 'help' | 'combo' | null;
   pause: number;
   /** which device last produced input: affects aim assist + UI */
   device: 'kbm' | 'pad' | 'touch';
@@ -34,6 +36,7 @@ export const newControls = (): ControlState => ({
   jump: 0,
   swap: 0,
   ping: 0,
+  pingKind: null,
   pause: 0,
   device: 'kbm',
 });
@@ -67,7 +70,10 @@ export class KeyboardMouse {
       }
       if (e.button === 0) this.mouseL = true;
       if (e.button === 2) this.mouseR = true;
-      if (e.button === 1) this.c.ping++;
+      if (e.button === 1) {
+        this.c.pingKind = null;
+        this.c.ping++;
+      }
     });
     window.addEventListener('mouseup', (e) => {
       if (e.button === 0) this.mouseL = false;
@@ -113,7 +119,18 @@ export class KeyboardMouse {
       if (k === 'ShiftLeft' || k === 'ShiftRight') this.c.dash++;
       if (k === 'KeyQ' || k === 'KeyE') this.c.sig++;
       if (k === 'KeyR' || k === 'Tab') this.c.swap++;
-      if (k === 'KeyG' || k === 'KeyZ') this.c.ping++;
+      if (k === 'KeyG' || k === 'KeyZ') {
+        this.c.pingKind = null;
+        this.c.ping++;
+      }
+      if (k === 'KeyH') {
+        this.c.pingKind = 'help';
+        this.c.ping++;
+      }
+      if (k === 'KeyC') {
+        this.c.pingKind = 'combo';
+        this.c.ping++;
+      }
       if (k === 'Escape' || k === 'KeyP') this.c.pause++;
     }
     if (k === 'Tab' || k === 'Space') e.preventDefault();
@@ -163,7 +180,18 @@ export class Gamepads {
     if (edge(1) || edge(10)) this.c.dash++;
     if (edge(5) || edge(2)) this.c.sig++;
     if (edge(4) || edge(3)) this.c.swap++;
-    if (edge(12) || edge(11)) this.c.ping++;
+    if (edge(12) || edge(11)) {
+      this.c.pingKind = null;
+      this.c.ping++;
+    }
+    if (edge(13)) {
+      this.c.pingKind = 'help';
+      this.c.ping++;
+    }
+    if (edge(14)) {
+      this.c.pingKind = 'combo';
+      this.c.ping++;
+    }
     if (edge(9)) this.c.pause++;
     this.prev = gp.buttons.map((x) => x.pressed);
   }
