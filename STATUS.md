@@ -32,6 +32,10 @@ Deployed by GitHub Actions from `main` (mirrored from `master`). Every push runs
 **Enemies**
 - 3 factions × 3 archetypes with procedural silhouettes and per-faction weaknesses/resistances: Cinderborn, Glasswing Swarm, Mirehollow.
 - Telegraphed circle/ring/line/cone ground decals that fill toward impact. Jumping clears rings and lines.
+- Elite affixes: Shielded, Hasted, Volatile, Warded (vs one element). Each has its own visual (bubble, wind streaks, pulsing core, rune ring) and shows in an aim readout with HP/shield bars.
+
+**Discoverability**
+- A Combo Codex (title and pause menus) generated from `combos.json`, plus loadout-aware tips at room start.
 
 **Bosses**
 - *Ignavar, the Kiln Heart* and *Sylvara, the Hollow Prism*, each with 3 phases.
