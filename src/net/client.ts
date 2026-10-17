@@ -1,6 +1,8 @@
 import type { LobbyPeer, NetStats, Session, ViewState } from './session';
 import type { Transport } from './transport';
-import { decodeEnemy, decodePickup, decodeTelegraph, decodeZone, PROTOCOL_VERSION, type Cmd, type Snapshot, type Welcome } from './protocol';
+import { decodeEnemy, decodePickup, decodePlayer, decodeTelegraph, decodeZone, PROTOCOL_VERSION, type Cmd, type PlayerMeta, type Snapshot, type Welcome } from './protocol';
+import { emptyInput } from '../sim/types';
+import { World as SimWorld } from '../sim/world';
 import type { Element, Enemy, MoveState, Player, PlayerInput, PingKind, SimEvent, Zone } from '../sim/types';
 import { SIM_DT } from '../sim/types';
 import { generateRoom, type Room } from '../sim/room';
@@ -115,6 +117,13 @@ export class ClientSession implements Session {
     this.connected = true;
   }
 
+  private meta = new Map<string, PlayerMeta>();
+  private blankPlayer(id: string): Player {
+    const w = new SimWorld(1);
+    const p = w.addPlayer({ id, name: '…', gauntlets: ['fire', 'frost'] });
+    return p;
+  }
+
   /** Swap host events for our own predicted shots onto the visuals we already spawned. */
   private reconcileEvent(e: SimEvent): SimEvent | null {
     if (e.t === 'cast' && e.pid === this.localId && e.slot === 'primary' && this.predCast.length) {
@@ -178,21 +187,36 @@ export class ClientSession implements Session {
     st.teamBoons = s.tb;
     st.time = s.time;
 
-    // players
+    // players: meta (names, boons, ...) arrives only on change; compact state every snapshot
+    if (s.pm) for (const m of s.pm) this.meta.set(m.id, m);
     const seen = new Set<string>();
-    for (const ps of s.p) {
-      seen.add(ps.id);
-      let p = st.players.get(ps.id);
+    for (const pa of s.p) {
+      const id = pa[0] as string;
+      seen.add(id);
+      let p = st.players.get(id);
       if (!p) {
-        p = { ...(ps as Player), pos: { ...ps.pos }, vel: { ...ps.vel }, stats: baseStats() };
-        st.players.set(ps.id, p);
+        p = this.blankPlayer(id);
+        st.players.set(id, p);
       }
-      const local = ps.id === this.localId;
+      const local = id === this.localId;
       const keepPos = local && this.pred ? { ...p.pos } : null;
-      Object.assign(p, ps, { pos: { ...ps.pos }, vel: { ...ps.vel } });
-      p.stats = aggregateBoons([...ps.boons, ...s.tb]);
+      decodePlayer(pa, p);
+      const m = this.meta.get(id);
+      if (m) {
+        p.name = m.name;
+        p.color = m.color;
+        p.gauntlets = m.g;
+        p.boons = m.boons;
+        p.secondWind = m.sw;
+        p.dmgDealt = m.dmg;
+        p.kills = m.kills;
+        p.combos = m.combos;
+        p.downs = m.downs;
+        p.ready = m.ready;
+      }
+      p.stats = aggregateBoons([...p.boons, ...s.tb]);
       if (local) this.reconcile(p, s.ack[this.localId] ?? 0, keepPos);
-      else this.pushSample(`p:${ps.id}`, t, ps.pos, ps.yaw);
+      else this.pushSample(`p:${id}`, t, p.pos, p.yaw);
     }
     for (const id of [...st.players.keys()]) if (!seen.has(id)) st.players.delete(id);
 

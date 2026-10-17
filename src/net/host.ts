@@ -1,6 +1,6 @@
 import { LocalSession, type NetStats } from './session';
 import type { Transport } from './transport';
-import { encodeSnapshot, PROTOCOL_VERSION, type Cmd, type Hello, type InputMsg } from './protocol';
+import { encodeSnapshot, playerMeta, PROTOCOL_VERSION, type Cmd, type Hello, type InputMsg } from './protocol';
 import type { Element, PlayerInput, PingKind, SimEvent } from '../sim/types';
 import { emptyInput } from '../sim/types';
 
@@ -120,9 +120,14 @@ export class HostSession extends LocalSession {
     if (this.world.tick % SNAP_EVERY === 0) this.sendSnapshot();
   }
 
+  private lastMeta = '';
   private sendSnapshot(): void {
     if (this.transport.peers().length === 0) return;
-    this.transport.send('snap', encodeSnapshot(this.world, this.world.activePlayerCount()));
+    // player meta only when it changed, plus every ~1 s so lossy links recover
+    const meta = JSON.stringify([...this.world.players.values()].map(playerMeta));
+    const withMeta = meta !== this.lastMeta || this.snapCount % 15 === 0;
+    this.lastMeta = meta;
+    this.transport.send('snap', encodeSnapshot(this.world, this.world.activePlayerCount(), withMeta));
     this.snapCount++;
   }
 

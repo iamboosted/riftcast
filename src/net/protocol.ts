@@ -31,8 +31,23 @@ export type Cmd =
 const r2 = (v: number) => Math.round(v * 100) / 100;
 const r1 = (v: number) => Math.round(v * 10) / 10;
 
-/** Player state sent in full (only up to 4 players). Stats are recomputed client-side from boons. */
-export type PlayerSnap = Omit<Player, 'stats'>;
+/** Rarely-changing player info, sent only when it changes (and periodically for loss recovery). */
+export interface PlayerMeta {
+  id: string;
+  name: string;
+  color: number;
+  g: [Element, Element];
+  boons: string[];
+  sw: number;
+  dmg: number;
+  kills: number;
+  combos: number;
+  downs: number;
+  ready: boolean;
+}
+
+const STATES: Player['state'][] = ['alive', 'downed', 'dead', 'spectating'];
+const RUNES: Player['rune'][] = ['none', 'blink', 'glide', 'rocket'];
 
 export interface Snapshot {
   tick: number;
@@ -41,25 +56,77 @@ export interface Snapshot {
   room: [number, number, number];
   run: Omit<RunInfo, 'unlockedBoons'>;
   tb: string[];
-  p: PlayerSnap[];
+  /** compact per-snapshot player state (see encodePlayer) */
+  p: (string | number)[][];
+  pm?: PlayerMeta[];
   e: (string | number)[][];
   z: (string | number | string[])[][];
   tg: (string | number)[][];
   pk: (string | number)[][];
 }
 
-export function encodeSnapshot(w: World, roomPlayers: number): Snapshot {
+export function playerMeta(pl: Player): PlayerMeta {
+  return { id: pl.id, name: pl.name, color: pl.color, g: [...pl.gauntlets] as [Element, Element], boons: pl.boons, sw: pl.secondWind, dmg: Math.round(pl.dmgDealt), kills: pl.kills, combos: pl.combos, downs: pl.downs, ready: pl.ready };
+}
+
+export function encodePlayer(pl: Player): (string | number)[] {
+  const c = pl.cd;
+  const flags = (pl.charging ? 1 : 0) | (pl.grounded ? 2 : 0) | (pl.hovering ? 4 : 0) | (pl.rocket ? 8 : 0);
+  return [
+    pl.id, r2(pl.pos.x), r2(pl.pos.y), r2(pl.pos.z), r2(pl.vel.x), r2(pl.vel.y), r2(pl.vel.z), r2(pl.yaw), r2(pl.pitch),
+    r1(pl.hp), pl.maxHp, STATES.indexOf(pl.state), pl.active, r2(pl.charge), flags, pl.dashCharges, r2(pl.dashCd), r2(pl.dashTime),
+    r2(pl.dashDirX), r2(pl.dashDirZ), pl.jumpsUsed, r2(pl.hoverFuel), r2(pl.lastJump), r2(pl.safeX), r2(pl.safeY), r2(pl.safeZ),
+    RUNES.indexOf(pl.rune), r2(pl.iframes), r1(pl.bleedout), r2(pl.reviveProgress),
+    r2(c[0].primary), r2(c[0].heavy), r1(c[0].signature), r2(c[1].primary), r2(c[1].heavy), r1(c[1].signature), r2(pl.castFlash), r2(pl.hurtFlash),
+  ];
+}
+
+/** Apply a compact player array onto a Player object (client mirror). */
+export function decodePlayer(a: (string | number)[], p: Player): void {
+  const n = (i: number) => a[i] as number;
+  p.pos = { x: n(1), y: n(2), z: n(3) };
+  p.vel = { x: n(4), y: n(5), z: n(6) };
+  p.yaw = n(7);
+  p.pitch = n(8);
+  p.hp = n(9);
+  p.maxHp = n(10);
+  p.state = STATES[n(11)] ?? 'alive';
+  p.active = n(12) === 1 ? 1 : 0;
+  p.charge = n(13);
+  const f = n(14);
+  p.charging = !!(f & 1);
+  p.grounded = !!(f & 2);
+  p.hovering = !!(f & 4);
+  p.rocket = !!(f & 8);
+  p.dashCharges = n(15);
+  p.dashCd = n(16);
+  p.dashTime = n(17);
+  p.dashDirX = n(18);
+  p.dashDirZ = n(19);
+  p.jumpsUsed = n(20);
+  p.hoverFuel = n(21);
+  p.lastJump = n(22);
+  p.safeX = n(23);
+  p.safeY = n(24);
+  p.safeZ = n(25);
+  p.rune = RUNES[n(26)] ?? 'none';
+  p.iframes = n(27);
+  p.bleedout = n(28);
+  p.reviveProgress = n(29);
+  p.cd = [
+    { primary: n(30), heavy: n(31), signature: n(32) },
+    { primary: n(33), heavy: n(34), signature: n(35) },
+  ];
+  p.castFlash = n(36);
+  p.hurtFlash = n(37);
+}
+
+export function encodeSnapshot(w: World, roomPlayers: number, includeMeta = true): Snapshot {
   const ack: Record<string, number> = {};
-  const p: PlayerSnap[] = [];
+  const p: (string | number)[][] = [];
   for (const pl of w.players.values()) {
     ack[pl.id] = pl.lastSeq;
-    const { stats: _s, ...rest } = pl;
-    p.push({
-      ...rest,
-      pos: { x: r2(pl.pos.x), y: r2(pl.pos.y), z: r2(pl.pos.z) },
-      vel: { x: r2(pl.vel.x), y: r2(pl.vel.y), z: r2(pl.vel.z) },
-      dmgDealt: Math.round(pl.dmgDealt),
-    });
+    p.push(encodePlayer(pl));
   }
   const { unlockedBoons: _u, ...run } = w.run;
   return {
@@ -70,6 +137,7 @@ export function encodeSnapshot(w: World, roomPlayers: number): Snapshot {
     run,
     tb: w.teamBoons,
     p,
+    pm: includeMeta ? [...w.players.values()].map(playerMeta) : undefined,
     e: w.enemies.map(encodeEnemy),
     z: w.zones.map(encodeZone),
     tg: w.telegraphs.map((t) => [t.id, t.shape, r2(t.x), r2(t.y), r2(t.z), r2(t.r), r2(t.r2), r2(t.angle), r2(t.len), r2(t.width), r2(t.t), r2(t.dur), t.element]),
