@@ -262,7 +262,7 @@ export function buildEnemy(shape: string, faction: string, seed: number, radius:
       break;
     }
     case 'kiln': {
-      b.add(lumpy(sph(2), rng, 0.06), 0xff7a2a, 2.6, mat(0, 3.2, 0, 0, 0, 0, 1.6));
+      b.add(lumpy(sph(2), rng, 0.06), 0xff7a2a, 1.25, mat(0, 3.2, 0, 0, 0, 0, 1.6));
       for (let i = 0; i < 4; i++) {
         const a = (i / 4) * Math.PI * 2 + 0.4;
         b.add(new THREE.CylinderGeometry(0.4, 0.7, 3.4, 6), 0x1c1414, 0, mat(Math.cos(a) * 1.6, 1.2, Math.sin(a) * 1.6, Math.sin(a) * 0.35, 0, -Math.cos(a) * 0.35));
@@ -286,7 +286,7 @@ export function buildEnemy(shape: string, faction: string, seed: number, radius:
         const a = (i / 6) * Math.PI * 2;
         b.add(new THREE.OctahedronGeometry(0.5, 0), 0xd8c8ff, 0.4, mat(Math.cos(a) * 1.1, rng.range(-1, 1), Math.sin(a) * 1.1, 0, 0, 0, 0.6, 1.6, 0.6));
       }
-      b.add(sph(1), 0xa77bff, 3, mat(0, 0, 0, 0, 0, 0, 0.6));
+      b.add(sph(1), 0xa77bff, 1.5, mat(0, 0, 0, 0, 0, 0, 0.6));
       for (let k = 0; k < 2; k++) {
         const ring = new THREE.Mesh(new THREE.TorusGeometry(2.6 + k * 0.7, 0.07, 6, 48), sharedMat('boss-prism', 0xa77bff, true));
         ring.rotation.x = Math.PI / 2 + (k ? 0.5 : -0.4);
