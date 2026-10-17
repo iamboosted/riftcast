@@ -91,6 +91,19 @@ export class Game {
     window.addEventListener('pointerdown', unlock, { capture: true });
     window.addEventListener('keydown', unlock, { capture: true });
     window.addEventListener('touchend', unlock, { capture: true });
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'F3' || e.code === 'Backquote') {
+        e.preventDefault();
+        this.meta.settings.perf = !this.meta.settings.perf;
+        this.meta.persist();
+      }
+      if (e.code === 'KeyM' && !(e.target as HTMLElement)?.closest?.('input')) {
+        this.meta.settings.muted = !this.meta.settings.muted;
+        this.meta.persist();
+        this.applySettings();
+        this.ui.toast(this.meta.settings.muted ? 'Muted' : 'Sound on');
+      }
+    });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.mode === 'play' && this.session && !this.session.roomCode) this.pause();
     });

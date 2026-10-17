@@ -54,7 +54,7 @@ for (const q of presets) {
     });
     await p.waitForTimeout(9000);
     const stats = await p.evaluate(() => document.getElementById('g-stats')?.textContent ?? '');
-    await p.screenshot({ path: `${outDir}/gallery-${q}.jpg`, type: 'jpeg', quality: 82 });
+    await p.screenshot({ path: `${outDir}/gallery-${q}.jpg`, type: 'jpeg', quality: 82, timeout: 300000 });
     report.push({ shot: `gallery-${q}`, stats, errors: errors.slice(0, 3) });
     await ctx.close();
   }
@@ -91,7 +91,7 @@ for (const q of presets) {
       const g = window.__game;
       return { webgpu: g.gfx.isWebGPU, particles: g.view.fx.particleCount, draws: g.gfx.drawCalls, enemies: g.session.state.enemies.length };
     });
-    await p.screenshot({ path: `${outDir}/combat-${q}.jpg`, type: 'jpeg', quality: 82 });
+    await p.screenshot({ path: `${outDir}/combat-${q}.jpg`, type: 'jpeg', quality: 82, timeout: 300000 });
     report.push({ shot: `combat-${q}`, ...info, errors: errors.slice(0, 3) });
     await ctx.close();
   }
@@ -105,7 +105,7 @@ if (only.includes('mobile')) {
   await p.goto(`${base}?slowgpu`);
   await waitFor(p, () => !!window.__game && window.__game.ui.current === 'title', 60000);
   await p.waitForTimeout(2500);
-  await p.screenshot({ path: `${outDir}/mobile-title.jpg`, type: 'jpeg', quality: 82 });
+  await p.screenshot({ path: `${outDir}/mobile-title.jpg`, type: 'jpeg', quality: 82, timeout: 300000 });
   // tap "Play Solo"
   const btn = await p.locator('[data-a="solo"]').boundingBox();
   await touch('touchStart', [[btn.x + btn.width / 2, btn.y + btn.height / 2]]);
@@ -137,7 +137,7 @@ if (only.includes('mobile')) {
     await p.waitForTimeout(700);
     samples.push(await p.evaluate(() => ({ mx: window.__game.controls.moveX, my: window.__game.controls.moveY, prim: window.__game.controls.primary })));
   }
-  await p.screenshot({ path: `${outDir}/mobile-combat-touch.jpg`, type: 'jpeg', quality: 82 });
+  await p.screenshot({ path: `${outDir}/mobile-combat-touch.jpg`, type: 'jpeg', quality: 82, timeout: 300000 });
   const buttonsRendered = await p.evaluate(() => [...document.querySelectorAll('.tbtn')].filter((el) => el.getBoundingClientRect().width > 20).length);
   await touch('touchEnd', []);
   await p.waitForTimeout(1500);

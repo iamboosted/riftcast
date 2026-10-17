@@ -262,6 +262,29 @@ describe('vfx + sim helpers', () => {
     expect(s.yaw).toBe(0);
     expect(validGauntlets(['fire', 'fire'])).toEqual(['fire', 'frost']);
   });
+  it('movement: walking stops at the island rim, dashing off the edge falls', () => {
+    const r = generateRoom(11, 0, 1);
+    const run = (dash: boolean) => {
+      const m = newMoveState(0, 0, 0);
+      let prev = { jump: 0, dash: 0 };
+      let minY = 0;
+      for (let i = 0; i < 30 * 12; i++) {
+        const inp = emptyInput();
+        inp.mx = 1; // walk east forever
+        if (dash && i > 30 * 6) inp.dash = Math.floor(i / 10) & 255;
+        stepMovement(m, inp, prev, SIM_DT, { room: r, walls: [] });
+        prev = { jump: inp.jump, dash: inp.dash };
+        minY = Math.min(minY, m.pos.y);
+      }
+      return { m, minY };
+    };
+    const walk = run(false);
+    expect(walk.minY).toBeGreaterThan(-0.01);
+    expect(isOnPlatforms(r.platforms, walk.m.pos.x, walk.m.pos.z)).toBe(true);
+    const dash = run(true);
+    expect(dash.minY).toBeLessThan(-1);
+  });
+
   it('movement: double jump reaches raised ledges, hover slows the fall', () => {
     const r = generateRoom(1, 0, 1);
     const m = newMoveState(0, 0, 0);

@@ -275,7 +275,7 @@ export class Ui {
           <button class="btn sm" data-a="set" data-v="touchLook:-0.1">Touch aim −</button><span class="val">${s.touchLook.toFixed(1)}</span><button class="btn sm" data-a="set" data-v="touchLook:0.1">+</button></div>
           <div class="row wrap">${tog('invertY', 'Invert Y', s.invertY)}${tog('aimAssist', 'Aim assist', s.aimAssist)}${tog('perf', 'Perf overlay', s.perf)}<button class="btn sm" data-a="fs">Fullscreen</button></div>
           <div class="row">${n === 'pause' ? '<button class="btn primary" data-a="resume">Resume</button><button class="btn danger" data-a="leave">Leave Run</button>' : '<button class="btn" data-a="title">Back</button>'}</div>
-          ${n === 'pause' ? '<p class="hint">Desktop: WASD move · Mouse aim · LMB cast · RMB charge · Q signature · Shift dash · Space jump/hover · R swap · G ping</p>' : ''}
+          ${n === 'pause' ? '<p class="hint">Desktop: WASD move · Mouse aim · LMB cast · RMB charge · Q signature · Shift dash · Space jump/hover · R swap · G ping (H help, C combo) · M mute · F3 perf</p>' : ''}
           </div>`;
         break;
       }

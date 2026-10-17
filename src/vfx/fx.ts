@@ -10,6 +10,7 @@ import { DecalLayer, scorchShader, frostShader, oozeShader, waterShader, electri
 import { Distortion } from './distort';
 import { LightPool } from './lights';
 import { Spikes } from './spikes';
+import { ProjMeshes } from './projmesh';
 import type { QualityPreset } from '../core/quality';
 import type { Element, Telegraph, Zone } from '../sim/types';
 import { ELEMENT_INFO } from '../data/elements';
@@ -44,6 +45,7 @@ interface ProjVis {
   age: number;
   life: number;
   sx: number;
+  sy: number;
   sz: number;
 }
 
@@ -129,6 +131,7 @@ export class Fx {
   lights: LightPool;
   ice = new Spikes('ice');
   rock = new Spikes('rock');
+  projMeshes = new ProjMeshes();
   private seenZones = new Set<number>();
   decals: Record<'scorch' | 'frost' | 'ooze' | 'water' | 'electric' | 'rune' | 'teleR' | 'teleL', DecalLayer>;
   trails: Trail[] = [];
@@ -159,7 +162,7 @@ export class Fx {
     for (const d of Object.values(this.decals)) this.group.add(d.mesh);
     this.group.add(this.blend.mesh, this.add.mesh, this.strips.mesh, this.rings.group, this.cores.mesh);
     this.lights = new LightPool(q.name === 'low' ? 2 : q.name === 'medium' ? 4 : 6);
-    this.group.add(this.lights.group, this.ice.mesh, this.rock.mesh);
+    this.group.add(this.lights.group, this.ice.mesh, this.rock.mesh, this.projMeshes.group);
     if (q.distortion) {
       this.distort = new Distortion();
       this.group.add(this.distort.mesh);
@@ -263,7 +266,7 @@ export class Fx {
         this.trails.push(trail2);
       }
     }
-    const pv: ProjVis = { id, el, spell, x, y, z, vx, vy, vz, g, r, enemy, trail, trail2, emitT: 0, age: 0, life: life + 0.3, sx: x, sz: z };
+    const pv: ProjVis = { id, el, spell, x, y, z, vx, vy, vz, g, r, enemy, trail, trail2, emitT: 0, age: 0, life: life + 0.3, sx: x, sy: y, sz: z };
     this.projs.set(id, pv);
     if (spell === 'sunorb' || spell === 'spear' || spell === 'lance' || spell === 'flask') {
       const tmp = new THREE.Vector3();
@@ -292,6 +295,7 @@ export class Fx {
       if (Math.abs(gy - y) < 0.6) this.scorchMark(p.el, x, gy, z, 0.6);
     }
     if (p.enemy) this.rings.ring(x, y, z, 1.4, C(p.el).main, { life: 0.25 });
+    if (p.spell === 'arc' && Math.hypot(x - p.sx, z - p.sz) > 1) this.bolt(p.sx, p.sy, p.sz, x, y, z, 'storm', 0.55, 0.12);
     if (p.spell === 'lance') this.ice.line(p.sx, p.sz, x, z, this.ground(x, z, y + 1), 10, 1.6, 2.2);
     if (p.spell === 'boulder') this.rock.burst(x, this.ground(x, z, y + 1), z, 1.6, 6, 0.9, 1.6);
   }
@@ -320,7 +324,7 @@ export class Fx {
       // head
       tmpCol.set(p.enemy ? c.main : c.core);
       const headSize: Record<string, number> = { ember: 0.7, shard: 0.35, arc: 0.6, gust: 0.9, pebble: 0.35, glob: 0.55, sunorb: 1.6 + p.r * 2, lance: 0.9, spear: 0.9, boulder: 0.6, flask: 0.6, orb: 1.1 };
-      this.cores.add(p.x, p.y, p.z, headSize[p.spell] ?? 0.6, tmpCol, p.enemy ? 3 : 2.5, p.spell === 'arc' || p.spell === 'spear' ? 6 : 0);
+      if (p.spell !== 'pebble' && p.spell !== 'boulder') this.cores.add(p.x, p.y, p.z, headSize[p.spell] ?? 0.6, tmpCol, p.enemy ? 3 : p.spell === 'shard' ? 1.2 : 2.5, p.spell === 'arc' || p.spell === 'spear' ? 6 : 0);
       if (p.spell === 'sunorb') {
         tmpCol2.set(c.main);
         this.cores.add(p.x, p.y, p.z, 2.6 + p.r * 3, tmpCol2, 1.0, 0);
@@ -847,6 +851,7 @@ export class Fx {
         }, 1);
       });
     }
+    this.projMeshes.update(this.projs.values());
     this.cores.end();
     this.strips.end();
     this.add.update(dt);

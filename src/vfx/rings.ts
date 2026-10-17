@@ -57,8 +57,8 @@ export class Shockwaves {
     const c = instancedBufferAttribute(this.ringCol);
     const r = positionLocal.xz.length();
     const thick = d.y;
-    const band = smoothstep(float(1).sub(thick), float(1).sub(thick.mul(0.35)), r).mul(smoothstep(1.0, 0.97, r));
-    const inner = smoothstep(float(1).sub(thick.mul(2.5)), float(1), r).mul(0.25);
+    const band = smoothstep(float(1).sub(thick), float(1).sub(thick.mul(0.35)), r).mul(smoothstep(1.0, 0.9, r));
+    const inner = smoothstep(float(1).sub(thick.mul(3.0)), float(0.97), r).mul(smoothstep(1.0, 0.95, r)).mul(0.12);
     const n = mx_noise_float(vec3(positionLocal.x.mul(4), positionLocal.z.mul(4), d.w.add(time))).mul(0.5).add(0.5);
     const fade = pow(float(1).sub(d.x), 1.6);
     const a = band.add(inner).mul(n.mul(0.6).add(0.6)).mul(fade).mul(d.z);

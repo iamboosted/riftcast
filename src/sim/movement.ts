@@ -232,11 +232,32 @@ export function stepMovement(
     m.hovering = true;
   }
 
+  const wasGrounded = m.grounded;
+  const ox = m.pos.x,
+    oz = m.pos.z;
   m.pos.x += m.vel.x * dt;
   m.pos.y += m.vel.y * dt;
   m.pos.z += m.vel.z * dt;
 
   resolveCollisions(m, MOVE.radius, col);
+
+  // Edge guard: walking never carries you off an island; jumping or dashing off still does.
+  if (wasGrounded && m.dashTime <= 0 && !res.jumped && m.vel.y <= 0) {
+    const probeY = m.pos.y + 0.6;
+    if (groundHeight(col.room, m.pos.x, m.pos.z, probeY) === -Infinity) {
+      if (groundHeight(col.room, m.pos.x, oz, probeY) > -Infinity) {
+        m.pos.z = oz;
+        m.vel.z = 0;
+      } else if (groundHeight(col.room, ox, m.pos.z, probeY) > -Infinity) {
+        m.pos.x = ox;
+        m.vel.x = 0;
+      } else {
+        m.pos.x = ox;
+        m.pos.z = oz;
+        m.vel.x = m.vel.z = 0;
+      }
+    }
+  }
 
   const gh = groundHeight(col.room, m.pos.x, m.pos.z, m.pos.y - m.vel.y * dt);
   if (m.pos.y <= gh && m.vel.y <= 0) {
