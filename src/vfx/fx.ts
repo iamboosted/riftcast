@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import { cc } from './colors';
 import { instancedBufferAttribute, vec2, vec4, texture, uv, float } from '../render/tsl';
 import { ParticleSystem, type Emit } from './particles';
 import { SHAPE } from './atlas';
@@ -232,7 +233,7 @@ export class Fx {
     this.burst(el, x + dx * 0.3, y + dy * 0.3, z + dz * 0.3, big * 0.45, [dx, dy, dz]);
     if (slot !== 'primary') {
       this.rings.ring(x, y - 1.3, z, 2.2 * big, c.main, { life: 0.35, intensity: 2.5 });
-      this.decals.rune.addTransient({ x, y: y - 1.34, z, sx: 1.6 * big, sz: 1.6 * big, rot: Math.random() * 6, d: [0, 0, 1, Math.random() * 10], color: new THREE.Color(c.main) }, 0.7);
+      this.decals.rune.addTransient({ x, y: y - 1.34, z, sx: 1.6 * big, sz: 1.6 * big, rot: Math.random() * 6, d: [0, 0, 1, Math.random() * 10], color: cc(c.main) }, 0.7);
     }
   }
 
@@ -403,7 +404,7 @@ export class Fx {
 
   scorchMark(el: Element, x: number, y: number, z: number, r: number) {
     const layer = el === 'frost' ? this.decals.frost : el === 'venom' ? this.decals.ooze : this.decals.scorch;
-    layer.addTransient({ x, y, z, sx: r, sz: r, rot: Math.random() * 6, d: [0, 0, 1, Math.random() * 100], color: new THREE.Color(C(el).main) }, el === 'fire' ? 7 : 4);
+    layer.addTransient({ x, y, z, sx: r, sz: r, rot: Math.random() * 6, d: [0, 0, 1, Math.random() * 100], color: cc(C(el).main) }, el === 'fire' ? 7 : 4);
   }
 
   nova(el: Element, x: number, y: number, z: number, r: number) {
@@ -412,7 +413,7 @@ export class Fx {
     this.rings.ring(x, gy, z, r, c.main, { life: 0.55, intensity: 4, thick: 0.3 });
     this.rings.ring(x, gy, z, r * 0.7, c.core, { life: 0.4, intensity: 3, thick: 0.15 });
     this.distort?.burst(x, gy + 1, z, r * 2.5, 1.0, 0.55);
-    this.decals.rune.addTransient({ x, y: gy, z, sx: r * 0.8, sz: r * 0.8, rot: 0, d: [0, 0, 1.5, Math.random() * 10], color: new THREE.Color(c.main) }, 1.0);
+    this.decals.rune.addTransient({ x, y: gy, z, sx: r * 0.8, sz: r * 0.8, rot: 0, d: [0, 0, 1.5, Math.random() * 10], color: cc(c.main) }, 1.0);
     this.juice.shake(0.35);
     this.lights.flash(x, gy + 1.5, z, c.main, el === 'frost' ? 35 : 60, r * 3, 0.6);
     if (el === 'frost') this.ice.burst(x, gy, z, r * 0.85, 34, 2.4, 3);
@@ -449,7 +450,7 @@ export class Fx {
     this.bolt(x + rnd(-3, 3), y + 20, z + rnd(-3, 3), x, y, z, 'storm', 1.2, 0.22);
     this.explosion('storm', x, y + 0.3, z, r, false);
     this.e('add', { x, y: y + 0.2, z, count: 1, life: 0.15, size: r * 5, sizeEnd: r * 2, color: 0xffffff, colorEnd: c.main, intensity: 3, shape: SHAPE.glow });
-    this.decals.electric.addTransient({ x, y, z, sx: r * 1.3, sz: r * 1.3, rot: Math.random() * 6, d: [0, 0, 1.4, Math.random() * 10], color: new THREE.Color(c.main) }, 0.6);
+    this.decals.electric.addTransient({ x, y, z, sx: r * 1.3, sz: r * 1.3, rot: Math.random() * 6, d: [0, 0, 1.4, Math.random() * 10], color: cc(c.main) }, 0.6);
     this.scorchMark('storm', x, y, z, r * 0.7);
     this.juice.flash(0xd8c8ff, 0.18);
     this.juice.shake(0.4);
@@ -491,7 +492,7 @@ export class Fx {
   }
 
   spawnPortal(x: number, y: number, z: number, accent: number) {
-    this.decals.rune.addTransient({ x, y, z, sx: 1.6, sz: 1.6, rot: 0, d: [0, 0, 1.6, Math.random() * 10], color: new THREE.Color(accent) }, 1.2);
+    this.decals.rune.addTransient({ x, y, z, sx: 1.6, sz: 1.6, rot: 0, d: [0, 0, 1.6, Math.random() * 10], color: cc(accent) }, 1.2);
     this.e('add', { x, y, z, count: 40, spread: 1, posSpread: 1.2, mode: 3, vy: 3, life: 0.9, size: 0.12, color: accent, colorEnd: 0x4a2a8a, intensity: 3.5, turb: 2, shape: SHAPE.ember });
     this.rings.ring(x, y, z, 2.2, accent, { life: 0.6, intensity: 2.5, r0: 2.2 * 0.9 });
   }
@@ -653,7 +654,7 @@ export class Fx {
     const r = z.radius;
     const lifeK = Math.max(0, Math.min(1, z.life / Math.max(0.01, z.maxLife)));
     const age01 = 1 - lifeK;
-    const col = new THREE.Color(c.main);
+    const col = cc(c.main);
     const chance = (n: number) => Math.random() < n * k;
     switch (z.tag) {
       case 'burning':
@@ -668,7 +669,7 @@ export class Fx {
         if (chance(0.25)) this.e('add', { x, y: y + 2, z: zz, count: 1, posSpread: r * 0.8, mode: 3, vy: -1, life: 1.4, size: 0.1, color: 0xffffff, colorEnd: c.main, intensity: 2.5, gravity: 0.5, turb: 1, shape: SHAPE.flake, spin: 2, floorY: y });
         break;
       case 'puddle':
-        this.decals.water.set({ x, y, z: zz, sx: r, sz: r, rot: z.id, d: [age01, 0, 1, z.id], color: new THREE.Color(0x6fb8ff) });
+        this.decals.water.set({ x, y, z: zz, sx: r, sz: r, rot: z.id, d: [age01, 0, 1, z.id], color: cc(0x6fb8ff) });
         break;
       case 'venompool':
         this.decals.ooze.set({ x, y, z: zz, sx: r, sz: r, rot: z.id, d: [age01, 0, 1, z.id], color: col });
@@ -784,7 +785,7 @@ export class Fx {
 
   telegraph(t: Telegraph) {
     const prog = Math.min(1, t.t / t.dur);
-    const col = new THREE.Color(C(t.element).main);
+    const col = cc(C(t.element).main);
     switch (t.shape) {
       case 'circle':
         this.decals.teleR.set({ x: t.x, y: t.y, z: t.z, sx: t.r, sz: t.r, rot: 0, d: [prog, 0, 0, t.id], color: col });

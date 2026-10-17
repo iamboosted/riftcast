@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu';
+import { cc } from '../vfx/colors';
 import { uniform, vec3, vec4, float, abs, dot, pow, normalView, positionViewDirection, mx_noise_float, positionWorld, time, mix } from './tsl';
 import { Arena } from './arena';
 import { buildEnemy, buildMage, enemyAccent, mat, type ActorRig } from './actors';
@@ -282,7 +283,7 @@ export class GameView {
   private spawnGhosts(pid: string, color: number, n: number) {
     const v = this.players.get(pid);
     if (!v) return;
-    const c = new THREE.Color(color);
+    const c = cc(color);
     for (let i = 0; i < n; i++) {
       setTimeout(() => {
         const m = new THREE.Mesh(v.rig.body.geometry, this.ghostMat);
@@ -311,7 +312,7 @@ export class GameView {
       pm.t += dt;
       if (pm.t > 5) this.pingMarkers.splice(i, 1);
       else {
-        const c = new THREE.Color(pm.color);
+        const c = cc(pm.color);
         this.fx.cores.add(pm.x, pm.y + 2.5 + Math.sin(pm.t * 4) * 0.2, pm.z, 0.9, c, 2.5, 6);
         if (Math.random() < dt * 20) this.fx.add.emit({ x: pm.x, y: pm.y + 0.1, z: pm.z, count: 1, vy: 4, life: 0.6, size: 0.1, color: pm.color, intensity: 3, shape: 0 });
       }
@@ -405,10 +406,10 @@ export class GameView {
       if (p.hovering) this.fx.hover(v.pos.x, v.pos.y, v.pos.z, p.color);
       if (downed) {
         // revive progress ring
-        this.fx.decals.rune.set({ x: v.pos.x, y: v.pos.y, z: v.pos.z, sx: 2.6, sz: 2.6, rot: this.fx.time, d: [0.5, 0, 0.6 + p.reviveProgress * 1.4, 1], color: new THREE.Color(p.reviveProgress > 0 ? 0x7dff8a : 0xff3a4a) });
+        this.fx.decals.rune.set({ x: v.pos.x, y: v.pos.y, z: v.pos.z, sx: 2.6, sz: 2.6, rot: this.fx.time, d: [0.5, 0, 0.6 + p.reviveProgress * 1.4, 1], color: cc(p.reviveProgress > 0 ? 0x7dff8a : 0xff3a4a) });
       }
       // player colour halo at feet
-      this.fx.cores.add(v.pos.x, v.pos.y + 0.05, v.pos.z, 1.1, new THREE.Color(p.color), 0.25, 0);
+      this.fx.cores.add(v.pos.x, v.pos.y + 0.05, v.pos.z, 1.1, cc(p.color), 0.25, 0);
     }
   }
 
@@ -472,11 +473,11 @@ export class GameView {
         this.fx.add.emit({ x: v.pos.x, y: v.pos.y + 0.3, z: v.pos.z, count: 1, posSpread: e.radius, vx: -Math.sin(e.yaw) * 6, vz: -Math.cos(e.yaw) * 6, life: 0.3, size: 0.6, sizeEnd: 0.9, color: 0xe0fff4, colorEnd: 0x8ff5d0, intensity: 1.2, alpha: 0.6, shape: 9, spin: 4 });
       if (e.affix === 'volatile') {
         const pulse = 0.5 + 0.5 * Math.sin(this.fx.time * 9 + e.seed);
-        this.fx.cores.add(v.pos.x, v.pos.y + e.height * 0.55, v.pos.z, e.radius * (1.4 + pulse * 0.8), new THREE.Color(0xff3a1a), 0.6 + pulse * 0.9, 0);
+        this.fx.cores.add(v.pos.x, v.pos.y + e.height * 0.55, v.pos.z, e.radius * (1.4 + pulse * 0.8), cc(0xff3a1a), 0.6 + pulse * 0.9, 0);
       }
       if (e.affix.startsWith('ward:')) {
         const wel = e.affix.slice(5) as Element;
-        this.fx.decals.rune.set({ x: v.pos.x, y: v.pos.y + 0.02, z: v.pos.z, sx: e.radius * 2.2, sz: e.radius * 2.2, rot: this.fx.time, d: [0.5, 0, 1.2, e.id], color: new THREE.Color(ELEMENT_INFO[wel].main) });
+        this.fx.decals.rune.set({ x: v.pos.x, y: v.pos.y + 0.02, z: v.pos.z, sx: e.radius * 2.2, sz: e.radius * 2.2, rot: this.fx.time, d: [0.5, 0, 1.2, e.id], color: cc(ELEMENT_INFO[wel].main) });
       }
       // windup glow
       if (e.state === 'windup' && Math.random() < dt * 30) {
@@ -578,7 +579,7 @@ export class GameView {
       if (!o) {
         const col = pk.kind === 'heal' ? 0x7dff8a : 0xb48cff;
         const m = new THREE.MeshStandardNodeMaterial({ roughness: 0.2 });
-        const c = new THREE.Color(col);
+        const c = cc(col);
         const fres = pow(float(1).sub(abs(dot(normalView, positionViewDirection))), 2);
         m.colorNode = vec3(c.r, c.g, c.b).mul(0.2);
         m.emissiveNode = vec3(c.r, c.g, c.b).mul(fres.mul(3).add(1));
@@ -589,9 +590,9 @@ export class GameView {
       o.position.set(pk.pos.x, pk.pos.y + 1 + Math.sin(this.fx.time * 2 + pk.id) * 0.2, pk.pos.z);
       o.rotation.y += dt * 2;
       if (pk.kind === 'rune') {
-        this.fx.decals.rune.set({ x: pk.pos.x, y: pk.pos.y, z: pk.pos.z, sx: 1.3, sz: 1.3, rot: this.fx.time * 0.5, d: [0.5, 0, 1, pk.id], color: new THREE.Color(0xb48cff) });
-        this.fx.cores.add(o.position.x, o.position.y, o.position.z, 1.6, new THREE.Color(0xb48cff), 0.8, 6);
-      } else this.fx.cores.add(o.position.x, o.position.y, o.position.z, 1.0, new THREE.Color(0x7dff8a), 0.8, 0);
+        this.fx.decals.rune.set({ x: pk.pos.x, y: pk.pos.y, z: pk.pos.z, sx: 1.3, sz: 1.3, rot: this.fx.time * 0.5, d: [0.5, 0, 1, pk.id], color: cc(0xb48cff) });
+        this.fx.cores.add(o.position.x, o.position.y, o.position.z, 1.6, cc(0xb48cff), 0.8, 6);
+      } else this.fx.cores.add(o.position.x, o.position.y, o.position.z, 1.0, cc(0x7dff8a), 0.8, 0);
     }
     for (const [id, o] of this.pickups) {
       if (!ids.has(id)) {
