@@ -68,3 +68,14 @@ A running log of design calls, with the reasoning behind each.
 - **Shader warm-up:** after the title appears, one of every actor and element material is built off-screen and passed to `renderer.compileAsync`, so first casts don't hitch.
 - **Test-only URL flags:** `?bot` (the local mage auto-fights and auto-picks boons), `?slowgpu` (lets the sim catch up with 0.5 s frames on software renderers), `?autoplay`, `?webgl`, `?quality=`.
 - **Arena shader cost scales with quality:** Low drops two noise octaves on the sky, floor and rock shaders.
+- **Elite affixes** add variety without new models. Elites always roll one; ordinary foes roll one 15% of the time from room 4.
+  - *Shielded* absorbs 85% of incoming damage from a pool of 45% max HP, shown as a fresnel bubble that bursts when broken.
+  - *Hasted* gets 1.4× speed and 0.7× attack cooldowns.
+  - *Volatile* leaves a telegraphed 3.6 m death blast.
+  - *Warded:X* takes 10% damage from element X, where X is never an element the faction already resists. That pushes swaps and combos.
+  - Affixes replicate in snapshots and show in an aim readout (name, affix, HP and shield bars) above the crosshair.
+- **Combo Codex + tips:** combos only matter if players find them. `combos.json` rules carry a `desc`, and the Codex screen (title and pause) renders straight from the table. Each of the first four rooms shows a tip matched to your two gauntlets.
+- **Mage arms** are separate pivoted meshes sharing the body material and FX uniform. Casting snaps the right arm to the aim pitch; charging brings both hands forward. It's cheap procedural animation that reads at gameplay distance.
+- **Client prediction covers charge and heavy release too.** The charge glow follows local input immediately, and the release flash is predicted, with the host's matching cast event suppressed (FIFO, 1 s window). Damage stays host-only.
+- **Reduce flashes** (Settings) caps screen flash, chromatic aberration and camera trauma for photosensitive players.
+- **Edge guard:** grounded walking can't step into the void. Only jumps, dashes and knockback in the air can. The guard lives in the shared `stepMovement`, so prediction matches the host.

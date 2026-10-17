@@ -77,7 +77,7 @@ Deployed by GitHub Actions from `main` (mirrored from `master`). Every push runs
 
 **Perf overlay** (Settings or F3): fps, backend, preset + DPR, particles (GPU/CPU), draw calls, enemies/zones/projectiles, net peers/RTT/kbps/snapshot rate/pending inputs.
 
-## Tests (`npm test`, 42 passing)
+## Tests (`npm test`, 45 passing)
 
 - **Multiplayer integration** (`tests/net.test.ts`): host + 3 clients on the lossy loopback (45 ms ± 15 ms, 8% loss on unreliable channels).
   - Convergent state through a scripted room (enemies, HP, positions; predicted local player within 0.25 m)
@@ -127,8 +127,8 @@ There's no physical GPU in this environment; Chromium renders WebGPU through Swi
 - **Never run on a real iPhone or a real GPU.** Touch was verified only in Chromium's iPhone emulation, and 60 fps is a design target, not a measurement.
 - **Co-op over the real internet is untested.** Relays and NAT traversal can't be reached from this sandbox. All netcode logic is covered on the loopback transport, but strict NATs without TURN may fail to connect.
 - **Balance is first-pass.** Numbers were set by reasoning, not playtesting. The bot clears runs only with a damage boost.
-- **Animation is minimal:** bobbing, leaning, wing flaps and spinning parts, with no limb animation.
-- **Only the primary attack is predicted** on clients. Heavies and signatures appear after RTT/2.
+- **Animation is light:** mages raise their arms to cast and charge; otherwise it's bobbing, leaning, wing flaps and spinning parts, with no walk cycles.
+- **Client prediction is visual only:** primary shots, charge glow and heavy-release flash. The heavy projectile itself and signatures appear after RTT/2.
 - **Enemy navigation is steering-only:** no pathfinding around ledges or walls.
 - **Audio has never been heard.** Everything is synthesised, and levels were set by reasoning.
 - **The gallery's showroom floor is a flat plain**, and stations very close together can bleed into each other's frame.
@@ -144,7 +144,7 @@ There's no physical GPU in this environment; Chromium renders WebGPU through Swi
 ## Top 5 next steps
 
 1. **Real-device pass:** profile on an iPhone (Safari 26 WebGPU) and a mid laptop, then tune the presets, particle budgets and floor/sky shader cost from real numbers.
-2. **Netcode feel:** predict heavy/signature casts, add lag-compensated hit checks for fast projectiles, add host migration/reconnect, and add an optional TURN config for strict NATs.
-3. **Animation:** procedural limbs (IK arms for casting, gait for walkers), hit reactions and death poses.
+2. **Netcode feel:** predict heavy/signature projectiles, add lag-compensated hit checks for fast projectiles, add host migration/reconnect, and add an optional TURN config for strict NATs.
+3. **Animation:** walk/gait cycles for mages and walkers, hit reactions and death poses (mages already raise their arms to cast).
 4. **Content depth:** elite modifiers, a third faction boss, more boons with build-defining synergies, room events (rift surges, treasure rooms) and a run map with branching.
 5. **Smoke/volumetrics upgrade:** lit, depth-faded volumetric puffs (sphere-impostor normals) for steam/venom/dust, and draped telegraphs via projected decals.
