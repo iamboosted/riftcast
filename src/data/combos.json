@@ -1,0 +1,348 @@
+{
+  "$comment": "Elemental interaction table. Rules are checked in order; patterns match symmetrically (a/b may be swapped). kind: projectile | zone | status | blast. Effects are implemented in src/sim/combos.ts.",
+  "rules": [
+    {
+      "id": "wall_redirect",
+      "name": "",
+      "silent": true,
+      "a": {
+        "kind": "projectile",
+        "element": "gale"
+      },
+      "b": {
+        "kind": "zone",
+        "tag": [
+          "wall",
+          "magmawall"
+        ]
+      },
+      "effect": {
+        "type": "reflect"
+      }
+    },
+    {
+      "id": "magma_wall",
+      "name": "MAGMA WALL",
+      "a": {
+        "kind": [
+          "projectile",
+          "blast"
+        ],
+        "element": "fire"
+      },
+      "b": {
+        "kind": "zone",
+        "tag": "wall"
+      },
+      "effect": {
+        "type": "transform",
+        "into": "magmawall",
+        "element": "fire",
+        "dps": 30,
+        "consume": true
+      }
+    },
+    {
+      "id": "wall_block",
+      "name": "",
+      "silent": true,
+      "a": {
+        "kind": "projectile"
+      },
+      "b": {
+        "kind": "zone",
+        "tag": [
+          "wall"
+        ]
+      },
+      "effect": {
+        "type": "block"
+      }
+    },
+    {
+      "id": "detonation",
+      "name": "DETONATION",
+      "a": {
+        "kind": [
+          "projectile",
+          "zone",
+          "blast"
+        ],
+        "element": "fire"
+      },
+      "b": {
+        "kind": "zone",
+        "tag": [
+          "venomcloud",
+          "toxicstorm",
+          "venompool"
+        ]
+      },
+      "effect": {
+        "type": "explode",
+        "element": "fire",
+        "damage": 140,
+        "radiusMul": 1.5,
+        "minRadius": 4,
+        "consume": true
+      }
+    },
+    {
+      "id": "firestorm",
+      "name": "FIRESTORM",
+      "a": {
+        "kind": "zone",
+        "tag": "vortex"
+      },
+      "b": {
+        "kind": [
+          "projectile",
+          "zone",
+          "blast"
+        ],
+        "element": "fire",
+        "tag": [
+          "any",
+          "burning"
+        ]
+      },
+      "effect": {
+        "type": "transform",
+        "into": "firestorm",
+        "element": "fire",
+        "dps": 38,
+        "radiusMul": 1.35,
+        "lifeAdd": 3
+      }
+    },
+    {
+      "id": "toxic_tempest",
+      "name": "TOXIC TEMPEST",
+      "a": {
+        "kind": "zone",
+        "tag": "vortex"
+      },
+      "b": {
+        "kind": [
+          "projectile",
+          "zone",
+          "blast"
+        ],
+        "element": "venom"
+      },
+      "effect": {
+        "type": "transform",
+        "into": "toxicstorm",
+        "element": "venom",
+        "dps": 22,
+        "radiusMul": 1.5,
+        "lifeAdd": 4,
+        "growth": 0.9
+      }
+    },
+    {
+      "id": "blizzard",
+      "name": "BLIZZARD",
+      "a": {
+        "kind": "zone",
+        "tag": "vortex"
+      },
+      "b": {
+        "kind": [
+          "projectile",
+          "zone",
+          "blast"
+        ],
+        "element": "frost"
+      },
+      "effect": {
+        "type": "transform",
+        "into": "blizzard",
+        "element": "frost",
+        "dps": 16,
+        "radiusMul": 1.4,
+        "lifeAdd": 3
+      }
+    },
+    {
+      "id": "thunderhead",
+      "name": "THUNDERHEAD",
+      "a": {
+        "kind": "zone",
+        "tag": "vortex"
+      },
+      "b": {
+        "kind": [
+          "projectile",
+          "blast"
+        ],
+        "element": "storm"
+      },
+      "effect": {
+        "type": "transform",
+        "into": "stormcell",
+        "element": "storm",
+        "dps": 10,
+        "radiusMul": 1.3,
+        "lifeAdd": 3
+      }
+    },
+    {
+      "id": "chain_electrocution",
+      "name": "CHAIN SURGE",
+      "a": {
+        "kind": [
+          "projectile",
+          "blast",
+          "zone"
+        ],
+        "element": "storm",
+        "tag": [
+          "any",
+          "stormcell"
+        ]
+      },
+      "b": {
+        "kind": "zone",
+        "tag": [
+          "puddle",
+          "frostpatch"
+        ]
+      },
+      "effect": {
+        "type": "electrify",
+        "element": "storm",
+        "damage": 55,
+        "duration": 3.5
+      }
+    },
+    {
+      "id": "steam",
+      "name": "STEAM BURST",
+      "a": {
+        "kind": [
+          "projectile",
+          "zone",
+          "blast"
+        ],
+        "element": "fire",
+        "tag": [
+          "any",
+          "burning",
+          "firestorm"
+        ]
+      },
+      "b": {
+        "kind": "zone",
+        "tag": [
+          "frostpatch",
+          "puddle",
+          "blizzard"
+        ]
+      },
+      "effect": {
+        "type": "spawn",
+        "zone": "steam",
+        "element": "frost",
+        "radiusMul": 1.6,
+        "minRadius": 3.5,
+        "life": 6,
+        "consume": true,
+        "damage": 25
+      }
+    },
+    {
+      "id": "steam_status",
+      "name": "STEAM BURST",
+      "a": {
+        "kind": [
+          "projectile",
+          "blast"
+        ],
+        "element": "fire"
+      },
+      "b": {
+        "kind": "status",
+        "tag": "frozen"
+      },
+      "effect": {
+        "type": "spawn",
+        "zone": "steam",
+        "element": "frost",
+        "minRadius": 3.5,
+        "life": 5,
+        "consume": true,
+        "damage": 30
+      }
+    },
+    {
+      "id": "shatter",
+      "name": "SHATTER",
+      "a": {
+        "kind": [
+          "projectile",
+          "blast"
+        ],
+        "element": "stone"
+      },
+      "b": {
+        "kind": "status",
+        "tag": "frozen"
+      },
+      "effect": {
+        "type": "shatter",
+        "element": "frost",
+        "damageMul": 3,
+        "damage": 60,
+        "radius": 4,
+        "consume": true
+      }
+    },
+    {
+      "id": "flash_freeze",
+      "name": "FLASH FREEZE",
+      "a": {
+        "kind": [
+          "projectile",
+          "blast"
+        ],
+        "element": "frost"
+      },
+      "b": {
+        "kind": "zone",
+        "tag": "puddle"
+      },
+      "effect": {
+        "type": "transform",
+        "into": "frostpatch",
+        "element": "frost",
+        "dps": 0,
+        "freeze": true,
+        "radiusMul": 1.2,
+        "lifeAdd": 3
+      }
+    },
+    {
+      "id": "conduction",
+      "name": "CONDUCTION",
+      "a": {
+        "kind": [
+          "projectile",
+          "blast"
+        ],
+        "element": "storm"
+      },
+      "b": {
+        "kind": "status",
+        "tag": "wet"
+      },
+      "effect": {
+        "type": "chain",
+        "element": "storm",
+        "damage": 40,
+        "radius": 9,
+        "jumps": 5
+      }
+    }
+  ]
+}
